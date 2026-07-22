@@ -1,7 +1,7 @@
 #ifndef MOCKBAROMETER_H
 #define MOCKBAROMETER_H
 
-#include "ISensor.h"
+#include "Sensor/ISensor.h"
 
 class MockBarometer : public ISensor {
 

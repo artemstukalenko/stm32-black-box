@@ -1,7 +1,7 @@
 #ifndef MOCKLOGGER_H
 #define MOCKLOGGER_H
 
-#include "ILogger.h"
+#include "Logger/ILogger.h"
 #include "usart.h"
 
 class MockLogger : public ILogger {

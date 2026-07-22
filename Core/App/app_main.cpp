@@ -3,8 +3,8 @@
 #include "cmsis_os.h"
 #include "usart.h"
 
-#include "MockBarometer.h"
-#include "MockLogger.h"
+#include "Sensor/Barometer/MockBarometer.h"
+#include "Logger/Impl/MockLogger.h"
 
 MockBarometer barometer;
 MockLogger logger(&huart1);
