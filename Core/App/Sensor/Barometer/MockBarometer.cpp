@@ -30,5 +30,5 @@ const char* MockBarometer::getName() {
 }
 
 uint32_t MockBarometer::getDelay() {
-	return (uint32_t) 500;
+	return (uint32_t) 2000;
 }

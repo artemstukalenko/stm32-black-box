@@ -28,5 +28,5 @@ const char* MockGPS::getName() {
 }
 
 uint32_t MockGPS::getDelay() {
-	return (uint32_t) 2000;
+	return (uint32_t) 5000;
 }
