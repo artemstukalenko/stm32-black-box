@@ -28,3 +28,7 @@ const char* MockBarometer::getDataString() {
 const char* MockBarometer::getName() {
 	return "MockBarometer";
 }
+
+uint32_t MockBarometer::getDelay() {
+	return (uint32_t) 500;
+}

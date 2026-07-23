@@ -19,6 +19,7 @@ public:
 	void update() override;
 	const char* getDataString() override;
 	const char* getName() override;
+	uint32_t getDelay() override;
 };
 
 #endif

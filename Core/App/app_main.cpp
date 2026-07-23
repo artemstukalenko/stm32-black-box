@@ -3,18 +3,25 @@
 #include "cmsis_os.h"
 #include "usart.h"
 #include <string.h>
+#include <stdio.h>
 
 #include "Sensor/ISensor.h"
 #include "Sensor/Barometer/MockBarometer.h"
+#include "Sensor/GPS/MockGPS.h"
 #include "Logger/Impl/MockLogger.h"
 
 #define MAX_LOG_MSG_LENGTH 64
+#define SENSOR_COUNT 2
 
 struct LogMessage {
 	char data[MAX_LOG_MSG_LENGTH];
 };
 
 MockBarometer barometer;
+MockGPS gps;
+
+ISensor* sensors[] = {&barometer, &gps};
+
 MockLogger logger(&huart1);
 
 osMessageQueueId_t logQueueHandle;
@@ -35,18 +42,23 @@ const osThreadAttr_t loggerTask_attributes = {
 };
 
 
-void SensorTask(void *argument) {
+void SensorTask(void* parameters) {
+	ISensor* sensor = static_cast<ISensor*>(parameters);
+	uint32_t delay = sensor->getDelay();
+
 	for(;;) {
-		barometer.update();
-		const char* dataStr = barometer.getDataString();
+		if (sensor != nullptr) {
+			sensor->update();
+			const char* dataStr = sensor->getDataString();
 
-		LogMessage message;
-		strncpy(message.data, dataStr, MAX_LOG_MSG_LENGTH - 1);
-		message.data[MAX_LOG_MSG_LENGTH - 1] = '\0';
+			LogMessage message;
+			strncpy(message.data, dataStr, MAX_LOG_MSG_LENGTH - 1);
+			message.data[MAX_LOG_MSG_LENGTH - 1] = '\0';
 
-		osMessageQueuePut(logQueueHandle, &message, 0, 0);
+			osMessageQueuePut(logQueueHandle, &message, 0, 0);
 
-		osDelay(500);
+			osDelay(delay);
+		}
 	}
 }
 
@@ -64,10 +76,18 @@ void LoggerTask(void *argument) {
 void app_main_task(void *argument) {
 	logger.init();
 
-	if (barometer.init()) {
-		logger.writeLog("[SYS] Barometer initialized.\r\n");
-	} else {
-		logger.writeLog("[SYS] Barometer initialization failed.");
+	for (int i = 0; i < SENSOR_COUNT; i++) {
+		char stringBuffer[64];
+		const char* messageTemplate = "[SYS] %s %s\r\n";
+		if (sensors[i]->init()) {
+			snprintf(stringBuffer, sizeof(stringBuffer), messageTemplate,
+					sensors[i]->getName(), "initialized.");
+			logger.writeLog(stringBuffer);
+		} else {
+			snprintf(stringBuffer, sizeof(stringBuffer), messageTemplate,
+								sensors[i]->getName(), "failed initialization.");
+			logger.writeLog(stringBuffer);
+		}
 	}
 
 	logger.writeLog("[SYS] BlackBox started.\r\n");
@@ -75,7 +95,10 @@ void app_main_task(void *argument) {
 
 	logQueueHandle = osMessageQueueNew(10, sizeof(LogMessage), NULL);
 
-	sensorTaskHandle = osThreadNew(SensorTask, NULL, &sensorTask_attributes);
+	for (int i = 0; i < SENSOR_COUNT; i++) {
+		osThreadNew(SensorTask, sensors[i], &sensorTask_attributes);
+	}
+
 	loggerTaskHandle = osThreadNew(LoggerTask, NULL, &loggerTask_attributes);
 
 	while(1) {

@@ -15,7 +15,7 @@ void MockGPS::update() {
 	longitude = -180.0 + static_cast<double>(rand()) / RAND_MAX * 360.0;
 	altitude  = static_cast<float>(rand() % 10000);
 
-	snprintf(stringBuffer, sizeof(stringBuffer), "GPS -> LAT: %d LON: %d AL: %d",
+	snprintf(stringBuffer, sizeof(stringBuffer), "GPS -> LAT: %d LON: %d AL: %d\r\n",
 			(int) latitude, (int) longitude, (int) altitude);
 }
 
@@ -25,4 +25,8 @@ const char* MockGPS::getDataString() {
 
 const char* MockGPS::getName() {
 	return "MockGPS";
+}
+
+uint32_t MockGPS::getDelay() {
+	return (uint32_t) 2000;
 }
