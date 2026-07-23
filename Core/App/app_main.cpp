@@ -2,12 +2,64 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "usart.h"
+#include <string.h>
 
+#include "Sensor/ISensor.h"
 #include "Sensor/Barometer/MockBarometer.h"
 #include "Logger/Impl/MockLogger.h"
 
+#define MAX_LOG_MSG_LENGTH 64
+
+struct LogMessage {
+	char data[MAX_LOG_MSG_LENGTH];
+};
+
 MockBarometer barometer;
 MockLogger logger(&huart1);
+
+osMessageQueueId_t logQueueHandle;
+osThreadId_t sensorTaskHandle;
+osThreadId_t loggerTaskHandle;
+
+
+const osThreadAttr_t sensorTask_attributes = {
+		.name = "SensorTask",
+		.stack_size = 256 * 4,
+		.priority = (osPriority_t) osPriorityNormal,
+};
+
+const osThreadAttr_t loggerTask_attributes = {
+		.name = "LoggerTask",
+		.stack_size = 256 * 4,
+		.priority = (osPriority_t) osPriorityBelowNormal
+};
+
+
+void SensorTask(void *argument) {
+	for(;;) {
+		barometer.update();
+		const char* dataStr = barometer.getDataString();
+
+		LogMessage message;
+		strncpy(message.data, dataStr, MAX_LOG_MSG_LENGTH - 1);
+		message.data[MAX_LOG_MSG_LENGTH - 1] = '\0';
+
+		osMessageQueuePut(logQueueHandle, &message, 0, 0);
+
+		osDelay(500);
+	}
+}
+
+void LoggerTask(void *argument) {
+	LogMessage receviedMessage;
+
+	for(;;) {
+		if (osMessageQueueGet(logQueueHandle, &receviedMessage, NULL, osWaitForever) == osOK) {
+			logger.writeLog(receviedMessage.data);
+		}
+	}
+}
+
 
 void app_main_task(void *argument) {
 	logger.init();
@@ -21,15 +73,15 @@ void app_main_task(void *argument) {
 	logger.writeLog("[SYS] BlackBox started.\r\n");
 	logger.writeLog("*************************\r\n");
 
+	logQueueHandle = osMessageQueueNew(10, sizeof(LogMessage), NULL);
+
+	sensorTaskHandle = osThreadNew(SensorTask, NULL, &sensorTask_attributes);
+	loggerTaskHandle = osThreadNew(LoggerTask, NULL, &loggerTask_attributes);
+
 	while(1) {
 		HAL_GPIO_TogglePin(LED_BUILTIN_GPIO_Port, LED_BUILTIN_Pin);
-
-		barometer.update();
-
-		const char* barometerDataString = barometer.getDataString();
-
-		logger.writeLog(barometerDataString);
-
-		osDelay(3000);
+		osDelay(100);
+		HAL_GPIO_TogglePin(LED_BUILTIN_GPIO_Port, LED_BUILTIN_Pin);
+		osDelay(1900);
 	}
 }
