@@ -10,6 +10,8 @@ public:
 	virtual void update() = 0;
 
 	virtual const char* getDataString() = 0;
+
+	virtual const char* getName() = 0;
 };
 
 #endif

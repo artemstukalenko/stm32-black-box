@@ -24,3 +24,7 @@ void MockBarometer::update() {
 const char* MockBarometer::getDataString() {
 	return stringBuffer;
 }
+
+const char* MockBarometer::getName() {
+	return "MockBarometer";
+}

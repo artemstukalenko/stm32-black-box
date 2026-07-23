@@ -19,6 +19,7 @@ public:
 	bool init() override;
 	void update() override;
 	const char* getDataString() override;
+	const char* getName() override;
 };
 
 #endif

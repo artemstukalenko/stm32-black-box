@@ -22,3 +22,7 @@ void MockGPS::update() {
 const char* MockGPS::getDataString() {
 	return stringBuffer;
 }
+
+const char* MockGPS::getName() {
+	return "MockGPS";
+}
