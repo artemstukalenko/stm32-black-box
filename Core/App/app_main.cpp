@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include "Sensor/ISensor.h"
+#include "Sensor/Barometer/Barometer.h"
 #include "Sensor/Barometer/MockBarometer.h"
 #include "Sensor/GPS/MockGPS.h"
 #include "Logger/Impl/MockLogger.h"
@@ -13,11 +14,13 @@
 #define MAX_LOG_MSG_LENGTH 64
 #define SENSOR_COUNT 2
 
+extern I2C_HandleTypeDef hi2c1;
+
 struct LogMessage {
 	char data[MAX_LOG_MSG_LENGTH];
 };
 
-MockBarometer barometer;
+Barometer barometer(&hi2c1);
 MockGPS gps;
 
 ISensor* sensors[] = {&barometer, &gps};
