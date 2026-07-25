@@ -1,17 +1,17 @@
-#ifndef MOCKLOGGER_H
-#define MOCKLOGGER_H
+#ifndef UARTLOGGER_H
+#define UARTLOGGER_H
 
 #include "Logger/ILogger.h"
 #include "usart.h"
 
-class MockLogger : public ILogger {
+class UartLogger : public ILogger {
 
 private:
 	UART_HandleTypeDef* uartHandle;
 
 public:
-	explicit MockLogger(UART_HandleTypeDef* huart);
-	~MockLogger() override = default;
+	explicit UartLogger(UART_HandleTypeDef* huart);
+	~UartLogger() override = default;
 
 	bool init() override;
 	bool writeLog(const char* message) override;

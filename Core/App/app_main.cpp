@@ -1,3 +1,4 @@
+#include <Logger/Impl/UartLogger.h>
 #include "app_main.h"
 #include "main.h"
 #include "cmsis_os.h"
@@ -9,7 +10,6 @@
 #include "Sensor/Barometer/Barometer.h"
 #include "Sensor/Barometer/MockBarometer.h"
 #include "Sensor/GPS/MockGPS.h"
-#include "Logger/Impl/MockLogger.h"
 
 #define MAX_LOG_MSG_LENGTH 64
 #define SENSOR_COUNT 2
