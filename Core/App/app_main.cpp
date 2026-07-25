@@ -1,11 +1,10 @@
-#include <Logger/Impl/UartLogger.h>
 #include "app_main.h"
 #include "main.h"
 #include "cmsis_os.h"
-#include "usart.h"
 #include <string.h>
 #include <stdio.h>
 
+#include "Logger/Impl/UsbCdcLogger.h"
 #include "Sensor/ISensor.h"
 #include "Sensor/Barometer/Barometer.h"
 #include "Sensor/Barometer/MockBarometer.h"
@@ -25,7 +24,7 @@ MockGPS gps;
 
 ISensor* sensors[] = {&barometer, &gps};
 
-MockLogger logger(&huart1);
+UsbCdcLogger logger;
 
 osMessageQueueId_t logQueueHandle;
 osThreadId_t sensorTaskHandle;
