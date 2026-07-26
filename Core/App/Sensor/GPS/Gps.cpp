@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-Gps::Gps(UART_HandleTypeDef* huart) : huart_(huart), rxByte_(0),
+Gps::Gps(Stm32UartBus* uartBus) : uartBus_(uartBus), rxByte_(0),
 		sentenceIndex_(0), newDataAvailable_(false) {
 	sentenceBuffer[0] = '\0';
 	stringBuffer[0] = '\0';
@@ -10,8 +10,7 @@ Gps::Gps(UART_HandleTypeDef* huart) : huart_(huart), rxByte_(0),
 
 
 bool Gps::init() {
-	HAL_StatusTypeDef status = HAL_UART_Receive_IT(huart_, (uint8_t*) &rxByte_, 1);
-	return (status == HAL_OK);
+	return uartBus_->receive((uint8_t*) &rxByte_, 1);
 }
 
 void Gps::update() {
@@ -54,5 +53,5 @@ void Gps::feedData(uint8_t byte) {
 void Gps::handleRxInterrupt() {
 	feedData(rxByte_);
 
-	HAL_UART_Receive_IT(huart_, (uint8_t*)&rxByte_, 1);
+	uartBus_->receive((uint8_t*)&rxByte_, 1);
 }

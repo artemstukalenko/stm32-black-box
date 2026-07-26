@@ -2,12 +2,12 @@
 #define GPS_H
 
 #include "Sensor/ISensor.h"
-#include "stm32f4xx_hal.h"
+#include "HardwareInterface/UART/Stm32UartBus.h"
 
 class Gps : public ISensor {
 
 private:
-	UART_HandleTypeDef* huart_;
+	Stm32UartBus* uartBus_;
 	char rxByte_;
 	char sentenceBuffer[128];
 	uint8_t sentenceIndex_;
@@ -17,7 +17,7 @@ private:
 	void feedData(uint8_t byte);
 
 public:
-	explicit Gps(UART_HandleTypeDef* huart);
+	explicit Gps(Stm32UartBus* uartBus_);
 	~Gps() override = default;
 
 	bool init() override;

@@ -7,7 +7,7 @@
 #define BMP280_REG_PRESS_MSB 0xF7
 #define BMP280_REG_CALIB 0x88
 
-Barometer::Barometer(II2CInterface* i2cInterface, uint16_t address) : i2cInterface_(i2cInterface), devAddress_(address),
+Barometer::Barometer(II2CBus* i2cBus, uint16_t address) : i2cBus_(i2cBus), devAddress_(address),
 		temperature_(0.0f), pressure_(0.0f) {
 	stringBuffer_[0] = '\0';
 }
@@ -16,7 +16,7 @@ bool Barometer::init() {
 	uint8_t chipId = 0;
 
 	//read chipId
-	if (!i2cInterface_->memRead(devAddress_, BMP280_REG_ID, 1, &chipId, 1, 1000)) {
+	if (!i2cBus_->memRead(devAddress_, BMP280_REG_ID, 1, &chipId, 1, 1000)) {
 		return false;
 	}
 
@@ -29,10 +29,10 @@ bool Barometer::init() {
 	}
 
 	uint8_t ctrl_meas = (1 << 5) | (1 << 2) | 3;
-	i2cInterface_->memWrite(devAddress_, BMP280_REG_CTRL_MEAS, 1, &ctrl_meas, 1, 1000);
+	i2cBus_->memWrite(devAddress_, BMP280_REG_CTRL_MEAS, 1, &ctrl_meas, 1, 1000);
 
 	uint8_t config = (5 << 5) | (0 << 2);
-	i2cInterface_->memWrite(devAddress_, BMP280_REG_CONFIG, 1, &config, 1, 1000);
+	i2cBus_->memWrite(devAddress_, BMP280_REG_CONFIG, 1, &config, 1, 1000);
 
 	return true;
 }
@@ -64,7 +64,7 @@ uint32_t Barometer::getDelay() {
 bool Barometer::readCalibrationData() {
 	uint8_t calibData[24];
 
-	if (!i2cInterface_->memRead(devAddress_, BMP280_REG_CALIB, 1, calibData, 24, 1000)) {
+	if (!i2cBus_->memRead(devAddress_, BMP280_REG_CALIB, 1, calibData, 24, 1000)) {
 		return false;
 	}
 
@@ -87,7 +87,7 @@ bool Barometer::readCalibrationData() {
 void Barometer::readRawData(int32_t* rawTemp, int32_t* rawPress) {
 	uint8_t data[6];
 
-	if (i2cInterface_->memRead(devAddress_, BMP280_REG_PRESS_MSB, 1, data, 6, 1000)) {
+	if (i2cBus_->memRead(devAddress_, BMP280_REG_PRESS_MSB, 1, data, 6, 1000)) {
 		*rawPress = (data[0] << 12) | (data[1] << 4) | (data[2] >> 4);
 		*rawTemp  = (data[3] << 12) | (data[4] << 4) | (data[5] >> 4);
 	}

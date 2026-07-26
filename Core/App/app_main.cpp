@@ -1,3 +1,4 @@
+#include <HardwareInterface/I2C/Stm32I2CBus.h>
 #include "app_main.h"
 #include "main.h"
 #include "usart.h"
@@ -8,9 +9,7 @@
 #include "Logger/Impl/UsbCdcLogger.h"
 #include "Sensor/ISensor.h"
 #include "Sensor/Barometer/Barometer.h"
-#include "Sensor/Barometer/MockBarometer.h"
 #include "Sensor/GPS/Gps.h"
-#include "HardwareInterface/I2C/I2CInterface.h"
 
 #define MAX_LOG_MSG_LENGTH 64
 #define SENSOR_COUNT 2
@@ -21,9 +20,11 @@ struct LogMessage {
 	char data[MAX_LOG_MSG_LENGTH];
 };
 
-I2CInterface i2cInterface(&hi2c1);
-Barometer barometer(&i2cInterface);
-Gps gps(&huart2);
+Stm32I2CBus i2cBus(&hi2c1);
+Barometer barometer(&i2cBus);
+
+Stm32UartBus uartBus(&huart2);
+Gps gps(&uartBus);
 
 ISensor* sensors[] = {&barometer, &gps};
 
