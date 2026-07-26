@@ -10,6 +10,7 @@
 #include "Sensor/Barometer/Barometer.h"
 #include "Sensor/Barometer/MockBarometer.h"
 #include "Sensor/GPS/Gps.h"
+#include "HardwareInterface/I2C/I2CInterface.h"
 
 #define MAX_LOG_MSG_LENGTH 64
 #define SENSOR_COUNT 2
@@ -20,7 +21,8 @@ struct LogMessage {
 	char data[MAX_LOG_MSG_LENGTH];
 };
 
-Barometer barometer(&hi2c1);
+I2CInterface i2cInterface(&hi2c1);
+Barometer barometer(&i2cInterface);
 Gps gps(&huart2);
 
 ISensor* sensors[] = {&barometer, &gps};

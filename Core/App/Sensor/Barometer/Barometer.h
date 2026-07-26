@@ -2,12 +2,12 @@
 #define BAROMETER_H
 
 #include "Sensor/ISensor.h"
-#include "i2c.h"
+#include "HardwareInterface/I2C/II2CInterface.h"
 
 class Barometer : public ISensor {
 
 private:
-	I2C_HandleTypeDef* hi2c_;
+	II2CInterface* i2cInterface_;
 	uint16_t devAddress_;
 
 	float temperature_;
@@ -25,7 +25,7 @@ private:
 	void calculateCompensatedData(int32_t rawTemp, int32_t rawPress);
 
 public:
-	Barometer(I2C_HandleTypeDef* hi2c, uint16_t address = (0x76 << 1));
+	Barometer(II2CInterface* i2cInterface, uint16_t address = (0x76 << 1));
 	~Barometer() override = default;
 
 	bool init() override;
