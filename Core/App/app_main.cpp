@@ -1,5 +1,6 @@
 #include "app_main.h"
 #include "main.h"
+#include "usart.h"
 #include "cmsis_os.h"
 #include <string.h>
 #include <stdio.h>
@@ -8,7 +9,7 @@
 #include "Sensor/ISensor.h"
 #include "Sensor/Barometer/Barometer.h"
 #include "Sensor/Barometer/MockBarometer.h"
-#include "Sensor/GPS/MockGPS.h"
+#include "Sensor/GPS/Gps.h"
 
 #define MAX_LOG_MSG_LENGTH 64
 #define SENSOR_COUNT 2
@@ -20,7 +21,7 @@ struct LogMessage {
 };
 
 Barometer barometer(&hi2c1);
-MockGPS gps;
+Gps gps(&huart2);
 
 ISensor* sensors[] = {&barometer, &gps};
 
@@ -108,5 +109,11 @@ void app_main_task(void *argument) {
 		osDelay(100);
 		HAL_GPIO_TogglePin(LED_BUILTIN_GPIO_Port, LED_BUILTIN_Pin);
 		osDelay(1900);
+	}
+}
+
+extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+	if (huart->Instance == USART2) {
+		gps.handleRxInterrupt();
 	}
 }
