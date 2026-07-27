@@ -54,7 +54,7 @@ const char* Barometer::getDataString() {
 }
 
 const char* Barometer::getName() {
-	return "BPM280";
+	return "BMP280";
 }
 
 uint32_t Barometer::getDelay() {
