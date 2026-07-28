@@ -1,4 +1,5 @@
 #include <HardwareInterface/I2C/Stm32I2CBus.h>
+#include <HardwareInterface/UART/Stm32UartBus.h>
 #include "app_main.h"
 #include "main.h"
 #include "usart.h"

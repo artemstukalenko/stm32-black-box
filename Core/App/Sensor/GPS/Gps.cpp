@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-Gps::Gps(Stm32UartBus* uartBus) : uartBus_(uartBus), rxByte_(0),
+Gps::Gps(IUartBus* uartBus) : uartBus_(uartBus), rxByte_(0),
 		sentenceIndex_(0), newDataAvailable_(false) {
 	sentenceBuffer[0] = '\0';
 	stringBuffer[0] = '\0';

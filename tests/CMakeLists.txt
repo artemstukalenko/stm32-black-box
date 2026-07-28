@@ -17,8 +17,10 @@ file(GLOB_RECURSE TEST_SOURCES "Src/*.cpp" "Src/*.h")
 add_executable(unit_tests
     ${TEST_SOURCES}
     ../Core/App/Sensor/Barometer/Barometer.cpp
+    ../Core/App/Sensor/GPS/Gps.cpp
 )
 
+target_compile_definitions(unit_tests PRIVATE UNIT_TESTING)
 
 target_include_directories(unit_tests PRIVATE
     ../Core/App

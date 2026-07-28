@@ -2,12 +2,22 @@
 #define GPS_H
 
 #include "Sensor/ISensor.h"
-#include "HardwareInterface/UART/Stm32UartBus.h"
+#include "HardwareInterface/UART/IUartBus.h"
+#ifdef UNIT_TESTING
+#include <gtest/gtest_prod.h>
+#endif
 
 class Gps : public ISensor {
 
 private:
-	Stm32UartBus* uartBus_;
+
+#ifdef UNIT_TESTING
+	FRIEND_TEST(GpsTest, FeedData_ParsesValidNmeaSentence_WithLineFeed);
+	FRIEND_TEST(GpsTest, FeedData_ParsesValidNmeaSentence_WithCarriageReturn);
+	FRIEND_TEST(GpsTest, FeedData_IgnoresInvalidSentences);
+	FRIEND_TEST(GpsTest, FeedData_PreventsBufferOverflow);
+#endif
+	IUartBus* uartBus_;
 	char rxByte_;
 	char sentenceBuffer[128];
 	uint8_t sentenceIndex_;
@@ -17,7 +27,7 @@ private:
 	void feedData(uint8_t byte);
 
 public:
-	explicit Gps(Stm32UartBus* uartBus_);
+	explicit Gps(IUartBus* uartBus_);
 	~Gps() override = default;
 
 	bool init() override;
