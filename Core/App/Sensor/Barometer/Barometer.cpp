@@ -1,5 +1,6 @@
 #include "Barometer.h"
 #include <stdio.h>
+#include <string.h>
 
 #define BMP280_REG_ID 0xD0
 #define BMP280_REG_CTRL_MEAS 0xF4
@@ -37,16 +38,22 @@ bool Barometer::init() {
 	return true;
 }
 
-void Barometer::update() {
+bool Barometer::update() {
+	bool updateResult = true;
+
 	int32_t rawTemp = 0, rawPress = 0;
 
-	readRawData(&rawTemp, &rawPress);
+	updateResult &= readRawData(&rawTemp, &rawPress);
 
 	//transform to meaningful temperature and pressure (C and Pa)
-	calculateCompensatedData(rawTemp, rawPress);
+	updateResult &= calculateCompensatedData(rawTemp, rawPress);
 
 	snprintf(stringBuffer_, sizeof(stringBuffer_), "BMP280 -> P: %d Pa, T: %d C\r\n",
 				(int) pressure_, (int) temperature_);
+
+	updateResult &= strlen(stringBuffer_) > 0;
+
+	return updateResult;
 }
 
 const char* Barometer::getDataString() {
@@ -84,16 +91,19 @@ bool Barometer::readCalibrationData() {
 	return true;
 }
 
-void Barometer::readRawData(int32_t* rawTemp, int32_t* rawPress) {
+bool Barometer::readRawData(int32_t* rawTemp, int32_t* rawPress) {
 	uint8_t data[6];
 
 	if (i2cBus_->memRead(devAddress_, BMP280_REG_PRESS_MSB, 1, data, 6, 1000)) {
 		*rawPress = (data[0] << 12) | (data[1] << 4) | (data[2] >> 4);
 		*rawTemp  = (data[3] << 12) | (data[4] << 4) | (data[5] >> 4);
+		return true;
+	} else {
+		return false;
 	}
 }
 
-void Barometer::calculateCompensatedData(int32_t rawTemp, int32_t rawPress) {
+bool Barometer::calculateCompensatedData(int32_t rawTemp, int32_t rawPress) {
 	// Compensation formulas from Bosch BMP280 Datasheet
 
 	//Temperature compensation
@@ -116,7 +126,7 @@ void Barometer::calculateCompensatedData(int32_t rawTemp, int32_t rawPress) {
 
 	if (p_var1 == 0) {
 		pressure_ = 0.0f;
-		return;
+		return false;
 	}
 
 	p = 1048576 - rawPress;
@@ -127,4 +137,6 @@ void Barometer::calculateCompensatedData(int32_t rawTemp, int32_t rawPress) {
 	p = ((p + p_var1 + p_var2) >> 8) + (((int64_t)dig_P7) << 4);
 
 	pressure_ = (float)p / 256.0f; //Convert to Pa
+
+	return true;
 }

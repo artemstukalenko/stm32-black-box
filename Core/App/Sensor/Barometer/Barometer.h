@@ -21,15 +21,15 @@ private:
 	int32_t t_fine;
 
 	bool readCalibrationData();
-	void readRawData(int32_t * rawTemp, int32_t * rawPress);
-	void calculateCompensatedData(int32_t rawTemp, int32_t rawPress);
+	bool readRawData(int32_t * rawTemp, int32_t * rawPress);
+	bool calculateCompensatedData(int32_t rawTemp, int32_t rawPress);
 
 public:
 	Barometer(II2CBus* i2cBus, uint16_t address = (0x76 << 1));
 	~Barometer() override = default;
 
 	bool init() override;
-	void update() override;
+	bool update() override;
 	const char* getDataString() override;
 	const char* getName() override;
 	uint32_t getDelay() override;

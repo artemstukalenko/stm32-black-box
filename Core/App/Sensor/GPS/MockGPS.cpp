@@ -10,13 +10,15 @@ bool MockGPS::init() {
 	return true;
 }
 
-void MockGPS::update() {
+bool MockGPS::update() {
 	latitude  = -90.0  + static_cast<double>(rand()) / RAND_MAX * 180.0;
 	longitude = -180.0 + static_cast<double>(rand()) / RAND_MAX * 360.0;
 	altitude  = static_cast<float>(rand() % 10000);
 
 	snprintf(stringBuffer, sizeof(stringBuffer), "GPS -> LAT: %d LON: %d AL: %d\r\n",
 			(int) latitude, (int) longitude, (int) altitude);
+
+	return true;
 }
 
 const char* MockGPS::getDataString() {

@@ -10,7 +10,7 @@ bool MockBarometer::init() {
 	return true;
 }
 
-void MockBarometer::update() {
+bool MockBarometer::update() {
 	float tempDelta = ((float)(rand() % 10) - 5.0f) / 10.0f;
 	float pressDelta = (float)(rand() % 100) - 50.0f;
 
@@ -19,6 +19,8 @@ void MockBarometer::update() {
 
 	snprintf(stringBuffer, sizeof(stringBuffer), "BMP280 -> P: %d Pa, T: %d C\r\n",
 			(int) pressure, (int) temperature);
+
+	return true;
 }
 
 const char* MockBarometer::getDataString() {

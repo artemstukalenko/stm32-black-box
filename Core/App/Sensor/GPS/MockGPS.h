@@ -17,7 +17,7 @@ public:
 	~MockGPS() override = default;
 
 	bool init() override;
-	void update() override;
+	bool update() override;
 	const char* getDataString() override;
 	const char* getName() override;
 	uint32_t getDelay() override;

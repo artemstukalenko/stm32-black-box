@@ -9,7 +9,7 @@ public:
 
 	virtual bool init() = 0;
 
-	virtual void update() = 0;
+	virtual bool update() = 0;
 
 	virtual const char* getDataString() = 0;
 

@@ -13,8 +13,9 @@ bool Gps::init() {
 	return uartBus_->receive((uint8_t*) &rxByte_, 1);
 }
 
-void Gps::update() {
+bool Gps::update() {
 	//do nothing - stringBuffer is accumulated within feedData()
+	return true;
 }
 
 const char* Gps::getDataString() {
