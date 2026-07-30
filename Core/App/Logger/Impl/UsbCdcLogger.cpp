@@ -14,6 +14,7 @@ bool UsbCdcLogger::writeLog(const char* message) {
 	return true;
 }
 
-void UsbCdcLogger::sync() {
+bool UsbCdcLogger::sync() {
 	//do nothing
+	return true;
 }

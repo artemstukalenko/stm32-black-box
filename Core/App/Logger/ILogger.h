@@ -11,7 +11,7 @@ public:
 
 	virtual bool writeLog(const char* message) = 0;
 
-	virtual void sync() = 0;
+	virtual bool sync() = 0;
 };
 
 #endif

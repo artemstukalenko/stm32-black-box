@@ -1,5 +1,3 @@
-#include <HardwareInterface/I2C/Stm32I2CBus.h>
-#include <HardwareInterface/UART/Stm32UartBus.h>
 #include "app_main.h"
 #include "main.h"
 #include "usart.h"
@@ -7,7 +5,11 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "Logger/Impl/UsbCdcLogger.h"
+#include <HardwareInterface/I2C/Stm32I2CBus.h>
+#include <HardwareInterface/UART/Stm32UartBus.h>
+#include <HardWareInterface/FatFS/OverwritingFatFS.h>
+
+#include "Logger/Impl/FatFSLogger.h"
 #include "Sensor/ISensor.h"
 #include "Sensor/Barometer/Barometer.h"
 #include "Sensor/GPS/Gps.h"
@@ -29,7 +31,8 @@ Gps gps(&uartBus);
 
 ISensor* sensors[] = {&barometer, &gps};
 
-UsbCdcLogger logger;
+OverwritingFatFS fatfs;
+FatFSLogger logger(&fatfs);
 
 osMessageQueueId_t logQueueHandle;
 osThreadId_t sensorTaskHandle;
@@ -75,13 +78,16 @@ void LoggerTask(void *argument) {
 	for(;;) {
 		if (osMessageQueueGet(logQueueHandle, &receviedMessage, NULL, osWaitForever) == osOK) {
 			logger.writeLog(receviedMessage.data);
+			logger.sync();
 		}
 	}
 }
 
 
 void app_main_task(void *argument) {
-	logger.init();
+	if (logger.init()) {
+		logger.writeLog("[SYS] Logger initialized.");
+	}
 
 	for (int i = 0; i < SENSOR_COUNT; i++) {
 		char stringBuffer[64];
@@ -99,6 +105,7 @@ void app_main_task(void *argument) {
 
 	logger.writeLog("[SYS] BlackBox started.\r\n");
 	logger.writeLog("*************************\r\n");
+	logger.sync();
 
 	logQueueHandle = osMessageQueueNew(10, sizeof(LogMessage), NULL);
 

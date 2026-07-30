@@ -15,7 +15,7 @@ public:
 
 	bool init() override;
 	bool writeLog(const char* message) override;
-	void sync() override;
+	bool sync() override;
 };
 
 #endif

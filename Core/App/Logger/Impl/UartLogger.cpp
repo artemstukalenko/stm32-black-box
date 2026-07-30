@@ -12,10 +12,10 @@ bool UartLogger::init() {
 bool UartLogger::writeLog(const char* message) {
 	if (message == nullptr) return false;
 
-	HAL_UART_Transmit(uartHandle, (uint8_t*) message, strlen(message), 100);
-	return true;
+	return HAL_UART_Transmit(uartHandle, (uint8_t*) message, strlen(message), 100) == HAL_OK;
 }
 
-void UartLogger::sync() {
+bool UartLogger::sync() {
 	//do nothing
+	return true;
 }
