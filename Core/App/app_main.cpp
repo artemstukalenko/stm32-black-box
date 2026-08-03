@@ -10,6 +10,8 @@
 #include <HardWareInterface/FatFS/OverwritingFatFS.h>
 
 #include "Logger/Impl/FatFSLogger.h"
+#include "Logger/Impl/UsbCdcLogger.h"
+#include "Logger/Impl/LoggerStrategy.h"
 #include "Sensor/ISensor.h"
 #include "Sensor/Barometer/Barometer.h"
 #include "Sensor/GPS/Gps.h"
@@ -32,12 +34,13 @@ Gps gps(&uartBus);
 ISensor* sensors[] = {&barometer, &gps};
 
 OverwritingFatFS fatfs;
-FatFSLogger logger(&fatfs);
+FatFSLogger fatFsLogger(&fatfs);
+UsbCdcLogger usbCdcLogger;
+LoggerStrategy logger(&fatFsLogger, &usbCdcLogger);
 
 osMessageQueueId_t logQueueHandle;
 osThreadId_t sensorTaskHandle;
 osThreadId_t loggerTaskHandle;
-
 
 const osThreadAttr_t sensorTask_attributes = {
 		.name = "SensorTask",
@@ -77,8 +80,12 @@ void LoggerTask(void *argument) {
 
 	for(;;) {
 		if (osMessageQueueGet(logQueueHandle, &receviedMessage, NULL, osWaitForever) == osOK) {
-			logger.writeLog(receviedMessage.data);
-			logger.sync();
+			bool writeResult = logger.writeLog(receviedMessage.data);
+			bool syncResult = logger.sync();
+
+			if (!writeResult || !syncResult) {
+				HAL_GPIO_WritePin(LED_BUILTIN_GPIO_Port, LED_BUILTIN_Pin, GPIO_PIN_RESET);
+			}
 		}
 	}
 }
@@ -115,12 +122,7 @@ void app_main_task(void *argument) {
 
 	loggerTaskHandle = osThreadNew(LoggerTask, NULL, &loggerTask_attributes);
 
-	while(1) {
-		HAL_GPIO_TogglePin(LED_BUILTIN_GPIO_Port, LED_BUILTIN_Pin);
-		osDelay(100);
-		HAL_GPIO_TogglePin(LED_BUILTIN_GPIO_Port, LED_BUILTIN_Pin);
-		osDelay(1900);
-	}
+	HAL_GPIO_TogglePin(LED_BUILTIN_GPIO_Port, LED_BUILTIN_Pin);
 }
 
 extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {

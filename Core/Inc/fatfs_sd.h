@@ -1,3 +1,8 @@
+/*
+ * This code was retrieved from https://github.com/eziya/STM32_SPI_SDCARD/
+ * Only SD_disk_timerproc was added by Artem Stukalenko
+ */
+
 #ifndef __FATFS_SD_H
 #define __FATFS_SD_H
 #include "diskio.h"
@@ -34,6 +39,8 @@ DSTATUS SD_disk_status (BYTE pdrv);
 DRESULT SD_disk_read (BYTE pdrv, BYTE* buff, DWORD sector, UINT count);
 DRESULT SD_disk_write (BYTE pdrv, const BYTE* buff, DWORD sector, UINT count);
 DRESULT SD_disk_ioctl (BYTE pdrv, BYTE cmd, void* buff);
+
+void SD_disk_timerproc(void);
 
 #define SPI_TIMEOUT 100
 

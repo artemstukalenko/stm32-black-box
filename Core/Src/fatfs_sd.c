@@ -1,3 +1,8 @@
+/*
+ * This code was retrieved from https://github.com/eziya/STM32_SPI_SDCARD/
+ * Only SD_disk_timerproc was added by Artem Stukalenko
+ */
+
 #define TRUE  1
 #define FALSE 0
 #define bool BYTE
@@ -7,8 +12,7 @@
 #include "diskio.h"
 #include "fatfs_sd.h"
 
-// FIX 1: volatile 키워드 추가
-// 인터럽트에 의해 값이 변경되는 변수는 컴파일러 최적화로 인한 오작동을 막기 위해 volatile로 선언해야 합니다.
+// FIX 1: volatile
 volatile uint16_t Timer1, Timer2;           /* 1ms Timer Counter */
 
 static volatile DSTATUS Stat = STA_NOINIT;  /* Disk Status */
@@ -18,6 +22,12 @@ static uint8_t PowerFlag = 0;               /* Power flag */
 /***************************************
  * SPI functions
  **************************************/
+
+void SD_disk_timerproc(void)
+{
+	if (Timer1) Timer1--;
+	if (Timer2) Timer2--;
+}
 
 /* slave select */
 static void SELECT(void)
