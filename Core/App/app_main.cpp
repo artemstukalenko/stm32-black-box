@@ -54,6 +54,11 @@ const osThreadAttr_t loggerTask_attributes = {
 		.priority = (osPriority_t) osPriorityBelowNormal
 };
 
+const osThreadAttr_t mavLinkTask_attributes = {
+		.name = "MavLinkTask",
+		.stack_size = 256 * 4,
+		.priority = (osPriority_t) osPriorityBelowNormal
+};
 
 void SensorTask(void* parameters) {
 	ISensor* sensor = static_cast<ISensor*>(parameters);
@@ -90,6 +95,16 @@ void LoggerTask(void *argument) {
 	}
 }
 
+void MavLinkTask(void *argument) {
+	for (;;) {
+		BarometerReading barometerReading = barometer.getReading();
+		char stringBuffer[64];
+		const char* barometerReadingTemplate = "BarometerReading: pressure = %d Pa, temperature = %d C\r\n";
+		snprintf(stringBuffer, sizeof(stringBuffer), barometerReadingTemplate, (int) barometerReading.pressurePa, (int) barometerReading.temperatureC);
+		logger.writeLog(stringBuffer);
+		osDelay(3000);
+	}
+}
 
 void app_main_task(void *argument) {
 	if (logger.init()) {
@@ -121,6 +136,8 @@ void app_main_task(void *argument) {
 	}
 
 	loggerTaskHandle = osThreadNew(LoggerTask, NULL, &loggerTask_attributes);
+
+	osThreadNew(MavLinkTask, NULL, &mavLinkTask_attributes);
 
 	HAL_GPIO_TogglePin(LED_BUILTIN_GPIO_Port, LED_BUILTIN_Pin);
 }

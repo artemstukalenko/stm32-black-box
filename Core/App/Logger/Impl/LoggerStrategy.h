@@ -1,3 +1,8 @@
+/*
+ * Logger that calls methods of both FatFS logger and USB CDC logger on every method call.
+ * FatFS logger invocation is what decides the output of LoggerStrategy.
+ * USB CDC logger is called silently.
+ */
 #ifndef LOGGER_STRATEGY_H
 #define LOGGER_STRATEGY_H
 

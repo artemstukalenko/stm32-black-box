@@ -4,6 +4,11 @@
 #include <HardwareInterface/I2C/II2CBus.h>
 #include "Sensor/ISensor.h"
 
+typedef struct {
+	float pressurePa;
+	float temperatureC;
+} BarometerReading;
+
 class Barometer : public ISensor {
 
 private:
@@ -33,6 +38,7 @@ public:
 	const char* getDataString() override;
 	const char* getName() override;
 	uint32_t getDelay() override;
+	BarometerReading getReading();
 };
 
 #endif

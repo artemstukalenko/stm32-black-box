@@ -68,6 +68,10 @@ uint32_t Barometer::getDelay() {
 	return 2000;
 }
 
+BarometerReading Barometer::getReading() {
+	return BarometerReading{pressure_, temperature_};
+}
+
 bool Barometer::readCalibrationData() {
 	uint8_t calibData[24];
 
