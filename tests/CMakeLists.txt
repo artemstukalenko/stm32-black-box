@@ -19,6 +19,7 @@ add_executable(unit_tests
     ../Core/App/Sensor/Barometer/Barometer.cpp
     ../Core/App/Sensor/GPS/Gps.cpp
     ../Core/App/Logger/Impl/FatFSLogger.cpp
+    ../Core/App/Service/MavLinkSender.cpp
 )
 
 target_compile_definitions(unit_tests PRIVATE UNIT_TESTING)
@@ -26,6 +27,7 @@ target_compile_definitions(unit_tests PRIVATE UNIT_TESTING)
 target_include_directories(unit_tests PRIVATE
     ../Core/App
     Src
+    ../Middlewares/Third_Party/mavlink
 )
 
 target_link_libraries(unit_tests
