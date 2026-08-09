@@ -7,6 +7,13 @@
 #include <gtest/gtest_prod.h>
 #endif
 
+typedef struct {
+	double latitude;
+	double longitude;
+	uint32_t utcTimeOfFix;
+	bool fixValid;
+} GpsReading;
+
 class Gps : public ISensor {
 
 private:
@@ -23,8 +30,10 @@ private:
 	uint8_t sentenceIndex_;
 	char stringBuffer[128];
 	bool newDataAvailable_;
+	GpsReading reading_;
 
 	void feedData(uint8_t byte);
+	bool parseGpgll(const char* sentence, GpsReading* out);
 
 public:
 	explicit Gps(IUartBus* uartBus_);
@@ -37,6 +46,8 @@ public:
 	uint32_t getDelay() override;
 
 	void handleRxInterrupt();
+
+	GpsReading getReading();
 
 };
 

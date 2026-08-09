@@ -103,6 +103,13 @@ void MavLinkTask(void *argument) {
 		snprintf(stringBuffer, sizeof(stringBuffer), barometerReadingTemplate, (int) barometerReading.pressurePa, (int) barometerReading.temperatureC);
 		logger.writeLog(stringBuffer);
 		osDelay(3000);
+
+		GpsReading gpsReading = gps.getReading();
+		const char* gpsReadingTemplate = "GpsReading: latitude =  %d, longitude = %d, utcTimeOfFix = %d, fixValid = %d\r\n";
+		snprintf(stringBuffer, sizeof(stringBuffer), gpsReadingTemplate, (int) gpsReading.latitude, (int) gpsReading.longitude, (int) gpsReading.utcTimeOfFix,
+				(int) gpsReading.fixValid);
+		logger.writeLog(stringBuffer);
+		osDelay(3000);
 	}
 }
 
