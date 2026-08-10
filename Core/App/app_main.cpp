@@ -16,7 +16,7 @@
 #include "Sensor/Barometer/Barometer.h"
 #include "Sensor/GPS/Gps.h"
 
-#define MAX_LOG_MSG_LENGTH 64
+#define MAX_LOG_MSG_LENGTH 96
 #define SENSOR_COUNT 2
 
 extern I2C_HandleTypeDef hi2c1;
@@ -67,13 +67,14 @@ void SensorTask(void* parameters) {
 	for(;;) {
 		if (sensor != nullptr) {
 			sensor->update();
-			const char* dataStr = sensor->getDataString();
+			const char* dataStr;
 
-			LogMessage message;
-			strncpy(message.data, dataStr, MAX_LOG_MSG_LENGTH - 1);
-			message.data[MAX_LOG_MSG_LENGTH - 1] = '\0';
-
-			osMessageQueuePut(logQueueHandle, &message, 0, 0);
+			while ((dataStr = sensor->getDataString())[0] != '\0') {
+				LogMessage message;
+				strncpy(message.data, dataStr, MAX_LOG_MSG_LENGTH - 1);
+				message.data[MAX_LOG_MSG_LENGTH - 1] = '\0';
+				osMessageQueuePut(logQueueHandle, &message, 0, 0);
+			}
 
 			osDelay(delay);
 		}
@@ -107,7 +108,7 @@ void MavLinkTask(void *argument) {
 		GpsReading gpsReading = gps.getReading();
 		const char* gpsReadingTemplate = "GpsReading: latitude =  %d, longitude = %d, utcTimeOfFix = %d, fixValid = %d\r\n";
 		snprintf(stringBuffer, sizeof(stringBuffer), gpsReadingTemplate, (int) gpsReading.latitude, (int) gpsReading.longitude, (int) gpsReading.utcTimeOfFix,
-				(int) gpsReading.fixValid);
+				gpsReading.fixValid);
 		logger.writeLog(stringBuffer);
 		osDelay(3000);
 	}
@@ -136,7 +137,7 @@ void app_main_task(void *argument) {
 	logger.writeLog("*************************\r\n");
 	logger.sync();
 
-	logQueueHandle = osMessageQueueNew(10, sizeof(LogMessage), NULL);
+	logQueueHandle = osMessageQueueNew(32, sizeof(LogMessage), NULL);
 
 	for (int i = 0; i < SENSOR_COUNT; i++) {
 		osThreadNew(SensorTask, sensors[i], &sensorTask_attributes);

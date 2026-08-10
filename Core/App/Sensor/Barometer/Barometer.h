@@ -18,6 +18,7 @@ private:
 	float temperature_;
 	float pressure_;
 	char stringBuffer_[64];
+	bool consumed_;
 
 	uint16_t dig_T1;
 	int16_t dig_T2, dig_T3;

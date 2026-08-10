@@ -4,9 +4,10 @@
 #include <stdlib.h>
 
 Gps::Gps(IUartBus* uartBus) : uartBus_(uartBus), rxByte_(0),
-		sentenceIndex_(0), newDataAvailable_(false) {
-	sentenceBuffer[0] = '\0';
-	stringBuffer[0] = '\0';
+		sentenceIndex_(0) {
+	queueHead_ = 0;
+	queueTail_ = 0;
+	droppedSentenceCount_ = 0;
 	reading_ = {};
 };
 
@@ -16,12 +17,20 @@ bool Gps::init() {
 }
 
 bool Gps::update() {
-	//do nothing - stringBuffer is accumulated within feedData()
 	return true;
 }
 
 const char* Gps::getDataString() {
-	return stringBuffer;
+	if (queueTail_ == queueHead_) {
+		popScratch_[0] = '\0';
+		return popScratch_;
+	}
+
+	strncpy(popScratch_, sentenceQueue_[queueTail_], sizeof(popScratch_) - 1);
+	popScratch_[sizeof(popScratch_) - 1] = '\0';
+	queueTail_ = (queueTail_ + 1) % SENTENCE_QUEUE_CAPACITY;
+
+	return popScratch_;
 }
 
 const char* Gps::getName() {
@@ -29,29 +38,43 @@ const char* Gps::getName() {
 }
 
 uint32_t Gps::getDelay() {
-	return 5000;
+	return 1000;
 }
 
 void Gps::feedData(uint8_t byte) {
 	if (byte == '\n' || byte == '\r') {
 		if (sentenceIndex_ > 0) {
-			sentenceBuffer[sentenceIndex_] = '\0';
+			sentenceBuffer_[sentenceIndex_] = '\0';
 
-			if (sentenceBuffer[0] == '$') {
-				snprintf(stringBuffer, sizeof(stringBuffer), "%s\r\n", sentenceBuffer);
-				newDataAvailable_ = true;
-				parseGpgll(stringBuffer, &reading_);
+			if (sentenceBuffer_[0] == '$') {
+				char formatted[128];
+				snprintf(formatted, sizeof(formatted), "%s\r\n", sentenceBuffer_);
+				pushSentence(formatted);
+				parseGpgll(formatted, &reading_);
 			}
 
 			sentenceIndex_ = 0;
 		}
 	} else {
-		if (sentenceIndex_ < (sizeof(sentenceBuffer) - 1)) {
-			sentenceBuffer[sentenceIndex_++] = (char)byte;
+		if (sentenceIndex_ < (sizeof(sentenceBuffer_) - 1)) {
+			sentenceBuffer_[sentenceIndex_++] = (char)byte;
 		} else {
 			sentenceIndex_ = 0;
 		}
 	}
+}
+
+void Gps::pushSentence(const char* sentence) {
+	uint8_t nextHead = (queueHead_ + 1) % SENTENCE_QUEUE_CAPACITY;
+
+	if (nextHead == queueTail_) {
+		droppedSentenceCount_++;
+		return;
+	}
+
+	strncpy(sentenceQueue_[queueHead_], sentence, sizeof(sentenceQueue_[queueHead_]) - 1);
+	sentenceQueue_[queueHead_][sizeof(sentenceQueue_[queueHead_]) - 1] = '\0';
+	queueHead_ = nextHead;
 }
 
 void Gps::handleRxInterrupt() {

@@ -51,13 +51,20 @@ bool Barometer::update() {
 	snprintf(stringBuffer_, sizeof(stringBuffer_), "BMP280 -> P: %d Pa, T: %d C\r\n",
 				(int) pressure_, (int) temperature_);
 
+	consumed_ = false;
+
 	updateResult &= strlen(stringBuffer_) > 0;
 
 	return updateResult;
 }
 
 const char* Barometer::getDataString() {
-	return stringBuffer_;
+	if (consumed_) {
+		return "";
+	} else {
+		consumed_ = true;
+		return stringBuffer_;
+	}
 }
 
 const char* Barometer::getName() {
