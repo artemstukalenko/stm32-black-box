@@ -48,7 +48,7 @@ bool Barometer::update() {
 	//transform to meaningful temperature and pressure (C and Pa)
 	updateResult &= calculateCompensatedData(rawTemp, rawPress);
 
-	snprintf(stringBuffer_, sizeof(stringBuffer_), "BMP280 -> P: %d Pa, T: %d C\r\n",
+	snprintf(stringBuffer_, sizeof(stringBuffer_), "P: %d Pa, T: %d C\r\n",
 				(int) pressure_, (int) temperature_);
 
 	consumed_ = false;

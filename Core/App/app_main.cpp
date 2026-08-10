@@ -22,6 +22,7 @@
 extern I2C_HandleTypeDef hi2c1;
 
 struct LogMessage {
+	char source[24];
 	char data[MAX_LOG_MSG_LENGTH];
 };
 
@@ -71,6 +72,9 @@ void SensorTask(void* parameters) {
 
 			while ((dataStr = sensor->getDataString())[0] != '\0') {
 				LogMessage message;
+				const char* sensorName = sensor->getName();
+				strncpy(message.source, sensorName, sizeof(message.source) - 1);
+				message.source[sizeof(message.source) - 1] = '\0';
 				strncpy(message.data, dataStr, MAX_LOG_MSG_LENGTH - 1);
 				message.data[MAX_LOG_MSG_LENGTH - 1] = '\0';
 				osMessageQueuePut(logQueueHandle, &message, 0, 0);
@@ -86,7 +90,10 @@ void LoggerTask(void *argument) {
 
 	for(;;) {
 		if (osMessageQueueGet(logQueueHandle, &receviedMessage, NULL, osWaitForever) == osOK) {
-			bool writeResult = logger.writeLog(receviedMessage.data);
+			char stringBuffer[64];
+ 			const char* sensorLoggingTemplate = "[%s]: %s";
+			snprintf(stringBuffer, sizeof(stringBuffer), sensorLoggingTemplate, receviedMessage.source, receviedMessage.data);
+			bool writeResult = logger.writeLog(stringBuffer);
 			bool syncResult = logger.sync();
 
 			if (!writeResult || !syncResult) {
@@ -99,7 +106,7 @@ void LoggerTask(void *argument) {
 void MavLinkTask(void *argument) {
 	for (;;) {
 		BarometerReading barometerReading = barometer.getReading();
-		char stringBuffer[64];
+		char stringBuffer[128];
 		const char* barometerReadingTemplate = "BarometerReading: pressure = %d Pa, temperature = %d C\r\n";
 		snprintf(stringBuffer, sizeof(stringBuffer), barometerReadingTemplate, (int) barometerReading.pressurePa, (int) barometerReading.temperatureC);
 		logger.writeLog(stringBuffer);
