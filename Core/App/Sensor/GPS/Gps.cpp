@@ -120,7 +120,7 @@ void Gps::applyGga(const struct minmea_sentence_gga& frame) {
 	reading_.satellitesUsed = (uint8_t) frame.satellites_tracked;
 
 	reading_.hdop = minmea_tofloat(&frame.hdop);
-	if (reading_.hdop == 0.0f && frame.hdop.scale == 0) {
+	if (frame.hdop.scale == 0) {
 		reading_.hdop = 99.99f;
 	}
 

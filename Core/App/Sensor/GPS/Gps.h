@@ -33,6 +33,7 @@ class Gps : public ISensor {
 private:
 
 #ifdef UNIT_TESTING
+	friend class GpsTest;
 	FRIEND_TEST(GpsTest, FeedData_ParsesValidNmeaSentence_WithLineFeed);
 	FRIEND_TEST(GpsTest, FeedData_ParsesValidNmeaSentence_WithCarriageReturn);
 	FRIEND_TEST(GpsTest, FeedData_IgnoresInvalidSentences);
