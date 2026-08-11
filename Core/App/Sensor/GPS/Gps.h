@@ -3,15 +3,29 @@
 
 #include "Sensor/ISensor.h"
 #include "HardwareInterface/UART/IUartBus.h"
+#include "minmea.h"
 #ifdef UNIT_TESTING
 #include <gtest/gtest_prod.h>
 #endif
 
+enum class GpsFixType : uint8_t {
+	NoGps = 0,
+	NoFix = 1,
+	Fix2D = 2,
+	Fix3D = 3,
+	DGPS = 4
+};
+
 typedef struct {
 	double latitude;
 	double longitude;
+	float altitudeMSL;
+	float hdop;
+	float speedKnots;
+	float courseDegrees;
+	uint8_t satellitesUsed;
 	uint32_t utcTimeOfFix;
-	bool fixValid;
+	GpsFixType fixType;
 } GpsReading;
 
 class Gps : public ISensor {
@@ -26,21 +40,23 @@ private:
 #endif
 
 	static constexpr uint8_t SENTENCE_QUEUE_CAPACITY = 16;
-	char sentenceQueue_[SENTENCE_QUEUE_CAPACITY][128];
+	char sentenceQueue_[SENTENCE_QUEUE_CAPACITY][MINMEA_MAX_SENTENCE_LENGTH];
 	volatile uint8_t queueHead_;
 	volatile uint8_t queueTail_;
 	uint32_t droppedSentenceCount_;
-	char popScratch_[128];
+	char popScratch_[MINMEA_MAX_SENTENCE_LENGTH];
 
 	IUartBus* uartBus_;
 	char rxByte_;
 	uint8_t sentenceIndex_;
-	char sentenceBuffer_[128];
+	char sentenceBuffer_[MINMEA_MAX_SENTENCE_LENGTH];
 	GpsReading reading_;
 
 	void feedData(uint8_t byte);
 	void pushSentence(const char* sentence);
-	bool parseGpgll(const char* sentence, GpsReading* out);
+	void dispatchSentence(const char* sentence);
+	void applyGga(const struct minmea_sentence_gga& frame);
+	void applyRmc(const struct minmea_sentence_rmc& frame);
 
 public:
 	explicit Gps(IUartBus* uartBus_);

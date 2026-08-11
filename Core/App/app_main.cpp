@@ -115,7 +115,7 @@ void MavLinkTask(void *argument) {
 		GpsReading gpsReading = gps.getReading();
 		const char* gpsReadingTemplate = "GpsReading: latitude =  %d, longitude = %d, utcTimeOfFix = %d, fixValid = %d\r\n";
 		snprintf(stringBuffer, sizeof(stringBuffer), gpsReadingTemplate, (int) gpsReading.latitude, (int) gpsReading.longitude, (int) gpsReading.utcTimeOfFix,
-				gpsReading.fixValid);
+				gpsReading.fixType);
 		logger.writeLog(stringBuffer);
 		osDelay(3000);
 	}

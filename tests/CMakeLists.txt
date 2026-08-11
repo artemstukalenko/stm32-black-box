@@ -20,14 +20,16 @@ add_executable(unit_tests
     ../Core/App/Sensor/GPS/Gps.cpp
     ../Core/App/Logger/Impl/FatFSLogger.cpp
     ../Core/App/Service/MavLinkSender.cpp
+    ../Middlewares/Third_Party/minmea/minmea.c
 )
 
-target_compile_definitions(unit_tests PRIVATE UNIT_TESTING)
+target_compile_definitions(unit_tests PRIVATE UNIT_TESTING timegm=mktime)
 
 target_include_directories(unit_tests PRIVATE
     ../Core/App
     Src
     ../Middlewares/Third_Party/mavlink
+    ../Middlewares/Third_Party/minmea
 )
 
 target_link_libraries(unit_tests

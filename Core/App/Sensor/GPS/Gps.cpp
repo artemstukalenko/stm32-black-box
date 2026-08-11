@@ -47,10 +47,10 @@ void Gps::feedData(uint8_t byte) {
 			sentenceBuffer_[sentenceIndex_] = '\0';
 
 			if (sentenceBuffer_[0] == '$') {
-				char formatted[128];
+				char formatted[MINMEA_MAX_SENTENCE_LENGTH];
 				snprintf(formatted, sizeof(formatted), "%s\r\n", sentenceBuffer_);
 				pushSentence(formatted);
-				parseGpgll(formatted, &reading_);
+				dispatchSentence(formatted);
 			}
 
 			sentenceIndex_ = 0;
@@ -87,97 +87,74 @@ GpsReading Gps::getReading() {
 	return reading_;
 }
 
-static double nmmToDecimalDegrees(const char* nmmStr) {
-	if (nmmStr == NULL || strlen(nmmStr) == 0) {
-		return 0.0;
+void Gps::dispatchSentence(const char* sentence) {
+	switch(minmea_sentence_id(sentence, false)) {
+		case MINMEA_SENTENCE_GGA: {
+			struct minmea_sentence_gga frame;
+			if (minmea_parse_gga(&frame, sentence)) {
+				applyGga(frame);
+			}
+			break;
+		}
+
+		case MINMEA_SENTENCE_RMC: {
+			struct minmea_sentence_rmc frame;
+			if (minmea_parse_rmc(&frame, sentence)) {
+				applyRmc(frame);
+			}
+			break;
+		}
+
+		default:
+			break;
 	}
-
-	double raw = atof(nmmStr);
-	double degrees = (double)((int)(raw / 100.0));
-	int wholePart = (int) raw;
-	int deg = wholePart / 100;
-	double minutes = raw - (deg * 100.0);
-
-	return (double) deg + minutes / 60.0;
 }
 
-static bool verifyNmeaChecksum(const char* sentence) {
-	const char* start = strchr(sentence, '$');
-	const char* asterisk = strchr(sentence, '*');
-
-	if (start == NULL || asterisk == NULL || asterisk <= start) {
-		return false;
+void Gps::applyGga(const struct minmea_sentence_gga& frame) {
+	switch (frame.fix_quality) {
+		case 0: reading_.fixType = GpsFixType::NoFix; break;
+		case 2: reading_.fixType = GpsFixType::DGPS; break;
+		default: reading_.fixType = GpsFixType::Fix3D; break;
 	}
 
-	uint8_t checksum = 0;
+	reading_.satellitesUsed = (uint8_t) frame.satellites_tracked;
 
-	for (const char* p = start + 1; p < asterisk; ++p) {
-		checksum ^= (uint8_t) (*p);
+	reading_.hdop = minmea_tofloat(&frame.hdop);
+	if (reading_.hdop == 0.0f && frame.hdop.scale == 0) {
+		reading_.hdop = 99.99f;
 	}
 
-	uint8_t expected = (uint8_t) strtol(asterisk + 1, NULL, 16);
-	return checksum == expected;
+	reading_.altitudeMSL = minmea_tofloat(&frame.altitude);
+
+	if (reading_.fixType != GpsFixType::NoFix) {
+		reading_.latitude = minmea_tocoord(&frame.latitude);
+		reading_.longitude = minmea_tocoord(&frame.longitude);
+	}
+
+	reading_.utcTimeOfFix = (uint32_t) frame.time.hours * 10000
+			+ (uint32_t) frame.time.minutes * 100
+			+ (uint32_t) frame.time.seconds;
 }
 
-static uint32_t parseUtcTime(const char* utcStr) {
-	if (utcStr == NULL || strlen(utcStr) < 6) {
-		return 0;
+void Gps::applyRmc(const struct minmea_sentence_rmc& frame) {
+	reading_.utcTimeOfFix = (uint32_t) frame.time.hours * 10000
+				+ (uint32_t) frame.time.minutes * 100
+				+ (uint32_t) frame.time.seconds;
+
+	if (!frame.valid) {
+		reading_.fixType = GpsFixType::NoFix;
+		reading_.speedKnots = -1.0f;
+		reading_.courseDegrees = -1.0f;
+		return;
 	}
 
-	char buf[7] = {0};
-	memcpy(buf, utcStr, 6);
-	return (uint32_t) atol(buf);
-}
-
-bool Gps::parseGpgll(const char* sentence, GpsReading* out) {
-	if (sentence == NULL || out == NULL) {
-		return false;
+	if (reading_.fixType == GpsFixType::NoGps || reading_.fixType == GpsFixType::NoFix) {
+		reading_.fixType = GpsFixType::Fix3D;
 	}
 
-	if (!verifyNmeaChecksum(sentence)) {
-		return false;
-	}
+	reading_.latitude = minmea_tocoord(&frame.latitude);
+	reading_.longitude = minmea_tocoord(&frame.longitude);
 
-	char buf[128];
-	strncpy(buf, sentence, sizeof(buf) - 1);
-	buf[sizeof(buf) - 1] = '\0';
-
-	char* saveptr = NULL;
-	char* token;
-
-	token = strtok_r(buf, ",", &saveptr);
-
-	if (token == NULL || strstr(token, "GLL") == NULL) {
-		return false;
-	}
-
-	char* latStr = strtok_r(NULL, ",", &saveptr);
-	char* latHemi = strtok_r(NULL, ",", &saveptr);
-	char* lonStr = strtok_r(NULL, ",", &saveptr);
-	char* lonHemi = strtok_r(NULL, ",", &saveptr);
-	char* utcStr = strtok_r(NULL, ",", &saveptr);
-	char* statusStr = strtok_r(NULL, ",", &saveptr);
-
-	if (latStr == NULL || latHemi == NULL || lonStr == NULL || lonHemi == NULL || utcStr == NULL || statusStr == NULL) {
-		return false;
-	}
-
-	bool valid = (statusStr[0] == 'A');
-
-	double lat = nmmToDecimalDegrees(latStr);
-	if (latHemi[0] == 'S') {
-		lat = -lat;
-	}
-
-	double lon = nmmToDecimalDegrees(lonStr);
-	if (lonHemi[0] == 'W') {
-		lon = -lon;
-	}
-
-	out->latitude = lat;
-	out->longitude = lon;
-	out->utcTimeOfFix = parseUtcTime(utcStr);
-	out->fixValid = valid;
-
-	return true;
+	reading_.speedKnots = minmea_tofloat(&frame.speed);
+	reading_.courseDegrees = minmea_tofloat(&frame.course);
 }
