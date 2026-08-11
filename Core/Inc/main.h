@@ -61,6 +61,10 @@ void Error_Handler(void);
 #define LED_BUILTIN_GPIO_Port GPIOC
 #define SD_CS_Pin GPIO_PIN_4
 #define SD_CS_GPIO_Port GPIOA
+#define ESP32_TX_Pin GPIO_PIN_9
+#define ESP32_TX_GPIO_Port GPIOA
+#define ESP32_RX_Pin GPIO_PIN_10
+#define ESP32_RX_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 

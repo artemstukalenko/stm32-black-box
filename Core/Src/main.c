@@ -26,6 +26,7 @@
 #include "usb_device.h"
 #include "gpio.h"
 #include "fatfs_sd.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -96,6 +97,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   MX_FATFS_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
