@@ -1,11 +1,11 @@
-#include "MavLinkSender.h"
+#include <Service/MavlinkPacketBuilder.h>
 #include <cmath>
 
 static constexpr float KNOTS_TO_CM_S = 51.4444f;
 
-MavLinkSender::MavLinkSender(uint8_t systemId, uint8_t componentId) : systemId_(systemId), componentId_(componentId) {}
+MavLinkPacketBuilder::MavLinkPacketBuilder(uint8_t systemId, uint8_t componentId) : systemId_(systemId), componentId_(componentId) {}
 
-uint16_t MavLinkSender::packBarometerReading(const BarometerReading* reading, uint32_t timeBootMs, uint8_t* buffer) {
+uint16_t MavLinkPacketBuilder::packBarometerReading(const BarometerReading* reading, uint32_t timeBootMs, uint8_t* buffer) {
 	mavlink_message_t msg;
 
 	mavlink_msg_scaled_pressure_pack(
@@ -21,7 +21,7 @@ uint16_t MavLinkSender::packBarometerReading(const BarometerReading* reading, ui
 	return mavlink_msg_to_send_buffer(buffer, &msg);
 }
 
-uint16_t MavLinkSender::packGpsReading(const GpsReading* reading, uint32_t timeBootMs, uint8_t* buffer) {
+uint16_t MavLinkPacketBuilder::packGpsReading(const GpsReading* reading, uint32_t timeBootMs, uint8_t* buffer) {
 	mavlink_message_t msg;
 
 	uint8_t fixType = static_cast<uint8_t>(reading->fixType);

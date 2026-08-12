@@ -2,7 +2,7 @@
 #include <cstring>
 #include <cmath>
 
-#include "Service/MavLinkSender.h"
+#include "Service/MavLinkPacketBuilder.h"
 #include "Sensor/GPS/GPS.h"
 
 namespace {
@@ -49,18 +49,18 @@ mavlink_gps_raw_int_t decodePackedGps(const uint8_t* buffer, uint16_t len, uint8
 
 
 
-class MavLinkSenderTest : public ::testing::Test {
+class MavLinkPacketBuilderTest : public ::testing::Test {
 
 protected:
-	MavLinkSender sender = MavLinkSender(kSystemId, kComponentId);
+	MavLinkPacketBuilder packetBuilder = MavLinkPacketBuilder(kSystemId, kComponentId);
 	uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
 };
 
-TEST_F(MavLinkSenderTest, BarometerPackedMessageDecodesBackToOriginalValues) {
+TEST_F(MavLinkPacketBuilderTest, BarometerPackedMessageDecodesBackToOriginalValues) {
 	BarometerReading reading {101325.0f, 22.5f};
 
 	uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
-	uint16_t len = sender.packBarometerReading(&reading, 1234, buffer);
+	uint16_t len = packetBuilder.packBarometerReading(&reading, 1234, buffer);
 
 	ASSERT_GT(len, 0);
 
@@ -85,11 +85,11 @@ TEST_F(MavLinkSenderTest, BarometerPackedMessageDecodesBackToOriginalValues) {
 	EXPECT_EQ(decoded.time_boot_ms, 1234u);
 }
 
-TEST_F(MavLinkSenderTest, GpsValidFixEncodesAllFieldsCorrectly) {
+TEST_F(MavLinkPacketBuilderTest, GpsValidFixEncodesAllFieldsCorrectly) {
 	GpsReading reading = makeBaseGpsReading();
 	uint32_t timeBootMs = 5000;
 
-	uint16_t len = sender.packGpsReading(&reading, timeBootMs, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, timeBootMs, buffer);
 	ASSERT_GT(len, 0u);
 
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_0);
@@ -101,7 +101,7 @@ TEST_F(MavLinkSenderTest, GpsValidFixEncodesAllFieldsCorrectly) {
 	EXPECT_EQ(decoded.satellites_visible, reading.satellitesUsed);
 }
 
-TEST_F(MavLinkSenderTest, GpsNoFixZeroesPositionButPacketIsStillValid) {
+TEST_F(MavLinkPacketBuilderTest, GpsNoFixZeroesPositionButPacketIsStillValid) {
 	GpsReading reading = makeBaseGpsReading();
 	reading.fixType = GpsFixType::NoFix;
 
@@ -109,7 +109,7 @@ TEST_F(MavLinkSenderTest, GpsNoFixZeroesPositionButPacketIsStillValid) {
 	reading.longitude = -999.0f;
 	reading.altitudeMSL = -1234.0f;
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_1);
 
 	EXPECT_EQ(decoded.lat, 0);
@@ -117,11 +117,11 @@ TEST_F(MavLinkSenderTest, GpsNoFixZeroesPositionButPacketIsStillValid) {
 	EXPECT_EQ(decoded.alt, 0);
 }
 
-TEST_F(MavLinkSenderTest, GpsNoGpsZeroesPositionButPacketIsStillValid) {
+TEST_F(MavLinkPacketBuilderTest, GpsNoGpsZeroesPositionButPacketIsStillValid) {
 	GpsReading reading = makeBaseGpsReading();
 	reading.fixType = GpsFixType::NoGps;
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_2);
 
 	EXPECT_EQ(decoded.lat, 0);
@@ -129,72 +129,72 @@ TEST_F(MavLinkSenderTest, GpsNoGpsZeroesPositionButPacketIsStillValid) {
 	EXPECT_EQ(decoded.alt, 0);
 }
 
-TEST_F(MavLinkSenderTest, GpsFix2DIsTreatedAsHasFix) {
+TEST_F(MavLinkPacketBuilderTest, GpsFix2DIsTreatedAsHasFix) {
 	GpsReading reading = makeBaseGpsReading();
 	reading.fixType = GpsFixType::Fix2D;
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_3);
 
 	EXPECT_EQ(decoded.lat, (int32_t) std::llround(reading.latitude * 1e7));
 	EXPECT_EQ(decoded.lon, (int32_t) std::llround(reading.longitude * 1e7));
 }
 
-TEST_F(MavLinkSenderTest, GpsDgpsFixKeepsPositionData) {
+TEST_F(MavLinkPacketBuilderTest, GpsDgpsFixKeepsPositionData) {
 	GpsReading reading = makeBaseGpsReading();
 	reading.fixType = GpsFixType::DGPS;
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_0);
 
 	EXPECT_EQ(decoded.lat, (int32_t) std::llround(reading.latitude * 1e7));
 	EXPECT_EQ(decoded.lon, (int32_t) std::llround(reading.longitude * 1e7));
 }
 
-TEST_F(MavLinkSenderTest, GpsHdopAtSentinelMapsToEphUnknown) {
+TEST_F(MavLinkPacketBuilderTest, GpsHdopAtSentinelMapsToEphUnknown) {
 	GpsReading reading = makeBaseGpsReading();
 	reading.hdop = 99.99f;
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_1);
 
 	EXPECT_EQ(decoded.eph, UINT16_MAX);
 }
 
-TEST_F(MavLinkSenderTest, GpsNormalHdopIsScaledByHundred) {
+TEST_F(MavLinkPacketBuilderTest, GpsNormalHdopIsScaledByHundred) {
 	GpsReading reading = makeBaseGpsReading();
 	reading.hdop = 1.5f;
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_2);
 
 	EXPECT_EQ(decoded.eph, 150);
 }
 
-TEST_F(MavLinkSenderTest, GpsEpvIsAlwaysUnknown) {
+TEST_F(MavLinkPacketBuilderTest, GpsEpvIsAlwaysUnknown) {
 	GpsReading reading = makeBaseGpsReading();
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_3);
 
 	EXPECT_EQ(decoded.epv, UINT16_MAX);
 }
 
-TEST_F(MavLinkSenderTest, GpsNegativeSpeedMapsToVelUnknown) {
+TEST_F(MavLinkPacketBuilderTest, GpsNegativeSpeedMapsToVelUnknown) {
 	GpsReading reading = makeBaseGpsReading();
 	reading.speedKnots = -1.0f;
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_0);
 
 	EXPECT_EQ(decoded.vel, UINT16_MAX);
 }
 
-TEST_F(MavLinkSenderTest, GpsValidSpeedConvertsFromKnotsToCmPerSec) {
+TEST_F(MavLinkPacketBuilderTest, GpsValidSpeedConvertsFromKnotsToCmPerSec) {
 	GpsReading reading = makeBaseGpsReading();
 	reading.speedKnots=10.0f;
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_1);
 
 	uint16_t expected = (uint16_t) std::lround(10.0f * kKnotsToCmS);
@@ -202,31 +202,31 @@ TEST_F(MavLinkSenderTest, GpsValidSpeedConvertsFromKnotsToCmPerSec) {
 	EXPECT_EQ(decoded.vel, expected);
 }
 
-TEST_F(MavLinkSenderTest, GpsSpeedAtZeroKnotsIsNotTreatedAsInvalid) {
+TEST_F(MavLinkPacketBuilderTest, GpsSpeedAtZeroKnotsIsNotTreatedAsInvalid) {
 	GpsReading reading = makeBaseGpsReading();
 	reading.speedKnots=0.0f;
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_2);
 
 	EXPECT_EQ(decoded.vel, 0);
 }
 
-TEST_F(MavLinkSenderTest, GpsNegativeCourseMapsToUnknown) {
+TEST_F(MavLinkPacketBuilderTest, GpsNegativeCourseMapsToUnknown) {
 	GpsReading reading = makeBaseGpsReading();
 	reading.courseDegrees=-1.0f;
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_3);
 
 	EXPECT_EQ(decoded.cog, UINT16_MAX);
 }
 
-TEST_F(MavLinkSenderTest, GpsValidCourseConvertsToCentidegrees) {
+TEST_F(MavLinkPacketBuilderTest, GpsValidCourseConvertsToCentidegrees) {
 	GpsReading reading = makeBaseGpsReading();
 	reading.courseDegrees=123.45f;
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_0);
 
 	uint16_t expected = (uint16_t) std::llround(123.45f * 100.0f);
@@ -234,37 +234,37 @@ TEST_F(MavLinkSenderTest, GpsValidCourseConvertsToCentidegrees) {
 	EXPECT_EQ(decoded.cog, expected);
 }
 
-TEST_F(MavLinkSenderTest, GpsCourseAtZeroDegreesIsNotTreatedAsInvalid) {
+TEST_F(MavLinkPacketBuilderTest, GpsCourseAtZeroDegreesIsNotTreatedAsInvalid) {
 	GpsReading reading = makeBaseGpsReading();
 	reading.courseDegrees=0.0f;
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_1);
 
 	EXPECT_EQ(decoded.cog, 0);
 }
 
-TEST_F(MavLinkSenderTest, GpsTimeUsecIsBootMsScaledToMicroseconds) {
+TEST_F(MavLinkPacketBuilderTest, GpsTimeUsecIsBootMsScaledToMicroseconds) {
 	GpsReading reading = makeBaseGpsReading();
 	uint32_t timeBootMs = 987654;
 
-	uint16_t len = sender.packGpsReading(&reading, timeBootMs, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, timeBootMs, buffer);
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_2);
 
 	EXPECT_EQ(decoded.time_usec, (uint64_t) timeBootMs * 1000ULL);
 }
 
-TEST_F(MavLinkSenderTest, GpsSatellitesUsedPassesThroughUnmodified) {
+TEST_F(MavLinkPacketBuilderTest, GpsSatellitesUsedPassesThroughUnmodified) {
 	GpsReading reading = makeBaseGpsReading();
 	reading.satellitesUsed = 14;
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 	mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_3);
 
 	EXPECT_EQ(decoded.satellites_visible, reading.satellitesUsed);
 }
 
-TEST_F(MavLinkSenderTest, FixTypeEnumMatchesMavlinkGpsFixTypeValues) {
+TEST_F(MavLinkPacketBuilderTest, FixTypeEnumMatchesMavlinkGpsFixTypeValues) {
 	struct Case { GpsFixType fix; uint8_t expectedMavLinkValue; const char* name; };
 
 	const Case cases[] = {
@@ -279,26 +279,26 @@ TEST_F(MavLinkSenderTest, FixTypeEnumMatchesMavlinkGpsFixTypeValues) {
 		GpsReading reading = makeBaseGpsReading();
 		reading.fixType = c.fix;
 
-		uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+		uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 		mavlink_gps_raw_int_t decoded = decodePackedGps(buffer, len, MAVLINK_COMM_0);
 
 		EXPECT_EQ(decoded.fix_type, c.expectedMavLinkValue);
 	}
 }
 
-TEST_F(MavLinkSenderTest, ReturnedLengthWithinMAvLinkV2Limits) {
+TEST_F(MavLinkPacketBuilderTest, ReturnedLengthWithinMAvLinkV2Limits) {
 	GpsReading reading = makeBaseGpsReading();
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 
 	EXPECT_GT(len, 0u);
 	EXPECT_LE(len, MAVLINK_MAX_PACKET_LEN);
 }
 
-TEST_F(MavLinkSenderTest, MessageIdSystemIdAndComponentIdAreCorrect) {
+TEST_F(MavLinkPacketBuilderTest, MessageIdSystemIdAndComponentIdAreCorrect) {
 	GpsReading reading = makeBaseGpsReading();
 
-	uint16_t len = sender.packGpsReading(&reading, 1000, buffer);
+	uint16_t len = packetBuilder.packGpsReading(&reading, 1000, buffer);
 
 	mavlink_message_t msg {};
 	mavlink_status_t status {};

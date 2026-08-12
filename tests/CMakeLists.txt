@@ -19,7 +19,7 @@ add_executable(unit_tests
     ../Core/App/Sensor/Barometer/Barometer.cpp
     ../Core/App/Sensor/GPS/Gps.cpp
     ../Core/App/Logger/Impl/FatFSLogger.cpp
-    ../Core/App/Service/MavLinkSender.cpp
+    ../Core/App/Service/MavLinkPacketBuilder.cpp
     ../Middlewares/Third_Party/minmea/minmea.c
 )
 
