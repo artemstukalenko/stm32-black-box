@@ -57,3 +57,17 @@ uint16_t MavLinkPacketBuilder::packGpsReading(const GpsReading* reading, uint32_
 
 	return mavlink_msg_to_send_buffer(buffer, &msg);
 }
+
+uint16_t MavLinkPacketBuilder::packHeartbeat(uint8_t* buffer) {
+	mavlink_message_t msg;
+
+	mavlink_msg_heartbeat_pack(
+			systemId_, componentId_,
+			&msg, MAV_TYPE_GENERIC,
+			MAV_AUTOPILOT_GENERIC,
+			0, 0,
+			MAV_STATE_ACTIVE
+	);
+
+	return mavlink_msg_to_send_buffer(buffer, &msg);
+}

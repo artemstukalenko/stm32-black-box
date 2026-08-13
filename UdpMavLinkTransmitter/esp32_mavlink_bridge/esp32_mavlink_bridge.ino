@@ -38,7 +38,8 @@ void setup() {
 	STM32_SERIAL.begin(STM32_BAUD, SERIAL_8N1, 16, 17);
 
 	WiFi.mode(WIFI_AP);
-	WiFi.softAP(AP_SSID, AP_PASSWORD);
+	WiFi.softAP(AP_SSID, AP_PASSWORD, 6);
+	WiFi.setTxPower(WIFI_POWER_19_5dBm);
 	Serial.print("AP started, IP: ");
 	Serial.println(WiFi.softAPIP());
 

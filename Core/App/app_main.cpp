@@ -108,19 +108,28 @@ void LoggerTask(void *argument) {
 }
 
 void MavLinkTask(void *argument) {
+	uint32_t iteration = 0;
 	for (;;) {
-		uint8_t barometerBuffer[MAVLINK_MAX_PACKET_LEN];
-		BarometerReading barometerReading = barometer.getReading();
-		uint16_t barometerPacketLen = mavLinkPacketBuilder.packBarometerReading(&barometerReading, 1000, barometerBuffer);
-		uartBus1.transmit(barometerBuffer, barometerPacketLen, 3000);
-		osDelay(3000);
+		uint8_t heartbeatBuffer[MAVLINK_MAX_PACKET_LEN];
+		uint16_t heartbeatPacketLen = mavLinkPacketBuilder.packHeartbeat(heartbeatBuffer);
+		uartBus1.transmit(heartbeatBuffer, heartbeatPacketLen, 3000);
 
-		uint8_t gpsBuffer[MAVLINK_MAX_PACKET_LEN];
-		GpsReading gpsReading = gps.getReading();
-		uint16_t gpsPacketLen = mavLinkPacketBuilder.packGpsReading(&gpsReading, 1000, gpsBuffer);
-		uartBus1.transmit(gpsBuffer, gpsPacketLen, 3000);
-		osDelay(3000);
+		if (iteration % 3 == 0) {
+			uint8_t barometerBuffer[MAVLINK_MAX_PACKET_LEN];
+			BarometerReading barometerReading = barometer.getReading();
+			uint16_t barometerPacketLen = mavLinkPacketBuilder.packBarometerReading(&barometerReading, 1000, barometerBuffer);
+			uartBus1.transmit(barometerBuffer, barometerPacketLen, 3000);
+
+			uint8_t gpsBuffer[MAVLINK_MAX_PACKET_LEN];
+			GpsReading gpsReading = gps.getReading();
+			uint16_t gpsPacketLen = mavLinkPacketBuilder.packGpsReading(&gpsReading, 1000, gpsBuffer);
+			uartBus1.transmit(gpsBuffer, gpsPacketLen, 3000);
+		}
+
 	}
+
+	iteration++;
+	osDelay(1000);
 }
 
 void app_main_task(void *argument) {
