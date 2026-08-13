@@ -15,6 +15,7 @@
 #include "Sensor/ISensor.h"
 #include "Sensor/Barometer/Barometer.h"
 #include "Sensor/GPS/Gps.h"
+#include "Service/MavLinkPacketBuilder.h"
 
 #define MAX_LOG_MSG_LENGTH 96
 #define SENSOR_COUNT 2
@@ -29,10 +30,13 @@ struct LogMessage {
 Stm32I2CBus i2cBus(&hi2c1);
 Barometer barometer(&i2cBus);
 
-Stm32UartBus uartBus(&huart2);
-Gps gps(&uartBus);
+Stm32UartBus uartBus1(&huart1);
+Stm32UartBus uartBus2(&huart2);
+Gps gps(&uartBus2);
 
 ISensor* sensors[] = {&barometer, &gps};
+
+MavLinkPacketBuilder mavLinkPacketBuilder;
 
 OverwritingFatFS fatfs;
 FatFSLogger fatFsLogger(&fatfs);
@@ -57,7 +61,7 @@ const osThreadAttr_t loggerTask_attributes = {
 
 const osThreadAttr_t mavLinkTask_attributes = {
 		.name = "MavLinkTask",
-		.stack_size = 256 * 4,
+		.stack_size = 512 * 4,
 		.priority = (osPriority_t) osPriorityBelowNormal
 };
 
@@ -105,18 +109,16 @@ void LoggerTask(void *argument) {
 
 void MavLinkTask(void *argument) {
 	for (;;) {
+		uint8_t barometerBuffer[MAVLINK_MAX_PACKET_LEN];
 		BarometerReading barometerReading = barometer.getReading();
-		char stringBuffer[128];
-		const char* barometerReadingTemplate = "BarometerReading: pressure = %d Pa, temperature = %d C\r\n";
-		snprintf(stringBuffer, sizeof(stringBuffer), barometerReadingTemplate, (int) barometerReading.pressurePa, (int) barometerReading.temperatureC);
-		logger.writeLog(stringBuffer);
+		uint16_t barometerPacketLen = mavLinkPacketBuilder.packBarometerReading(&barometerReading, 1000, barometerBuffer);
+		uartBus1.transmit(barometerBuffer, barometerPacketLen, 3000);
 		osDelay(3000);
 
+		uint8_t gpsBuffer[MAVLINK_MAX_PACKET_LEN];
 		GpsReading gpsReading = gps.getReading();
-		const char* gpsReadingTemplate = "GpsReading: latitude =  %d, longitude = %d, utcTimeOfFix = %d, fixValid = %d\r\n";
-		snprintf(stringBuffer, sizeof(stringBuffer), gpsReadingTemplate, (int) gpsReading.latitude, (int) gpsReading.longitude, (int) gpsReading.utcTimeOfFix,
-				gpsReading.fixType);
-		logger.writeLog(stringBuffer);
+		uint16_t gpsPacketLen = mavLinkPacketBuilder.packGpsReading(&gpsReading, 1000, gpsBuffer);
+		uartBus1.transmit(gpsBuffer, gpsPacketLen, 3000);
 		osDelay(3000);
 	}
 }
