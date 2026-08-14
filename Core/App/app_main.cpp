@@ -126,10 +126,9 @@ void MavLinkTask(void *argument) {
 			uartBus1.transmit(gpsBuffer, gpsPacketLen, 3000);
 		}
 
+		iteration++;
+		osDelay(1000);
 	}
-
-	iteration++;
-	osDelay(1000);
 }
 
 void app_main_task(void *argument) {
