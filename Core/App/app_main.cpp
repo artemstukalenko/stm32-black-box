@@ -1,3 +1,4 @@
+#include <HardwareInterface/FatFS/AppendingFatFS.h>
 #include "app_main.h"
 #include "main.h"
 #include "usart.h"
@@ -8,8 +9,6 @@
 
 #include <HardwareInterface/I2C/Stm32I2CBus.h>
 #include <HardwareInterface/UART/Stm32UartBus.h>
-#include <HardWareInterface/FatFS/OverwritingFatFS.h>
-
 #include "Logger/Impl/FatFSLogger.h"
 #include "Logger/Impl/UsbCdcLogger.h"
 #include "Logger/Impl/LoggerStrategy.h"
@@ -49,7 +48,7 @@ SensorTaskContext sensorContexts[SENSOR_COUNT] = {
 
 MavLinkPacketBuilder mavLinkPacketBuilder;
 
-OverwritingFatFS fatfs;
+AppendingFatFS fatfs;
 FatFSLogger fatFsLogger(&fatfs);
 UsbCdcLogger usbCdcLogger;
 LoggerStrategy logger(&fatFsLogger, &usbCdcLogger);

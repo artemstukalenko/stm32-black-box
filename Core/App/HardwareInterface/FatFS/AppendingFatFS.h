@@ -5,7 +5,7 @@
 #include "ff.h"
 #include <string.h>
 
-class OverwritingFatFS : public IFatFS {
+class AppendingFatFS : public IFatFS {
 
 private:
 	FATFS fs_;
@@ -13,7 +13,7 @@ private:
 	const char* fileName_ = "bb_log.txt";
 
 public:
-	~OverwritingFatFS() override = default;
+	~AppendingFatFS() override = default;
 
 	bool mount() override;
 	bool close() override;
