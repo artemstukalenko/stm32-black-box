@@ -63,9 +63,16 @@ The codebase is deliberately layered so the application logic is testable on a h
 - **`HardwareInterface/`** — abstract bus interfaces (`II2CBus`, `IUartBus`, `IFatFS`), each with two implementations: an `Stm32*` adapter that wraps real HAL calls, and a mock used in unit tests. This is the seam that makes everything above it hardware-independent.
 - **`Logger/`** — an `ILogger` interface implemented by `FatFSLogger` (SD card), `UsbCdcLogger`, and `UartLogger`, composed behind a `LoggerStrategy` that fans writes out to multiple sinks behind a single interface.
 - **`Service/`** — `MavLinkPacketBuilder` translates internal sensor readings into MAVLink v2 wire packets (heartbeat, scaled pressure, GPS raw int), decoupling telemetry framing from both the sensors and the transport.
-- **`app_main.cpp`** — the composition root: wires concrete sensors/buses/loggers together and defines the FreeRTOS tasks (`SensorTask` per sensor, `LoggerTask`, `MavLinkTask`), communicating exclusively through a message queue.
+- **`Watchdog/`** — `TaskLiveness` is a plain, hardware-agnostic scoreboard: each supervised task reports a "still alive" timestamp once per loop iteration, and it can be asked whether every tracked task has checked in recently. It has no knowledge of FreeRTOS or the IWDG, which keeps it host-testable like the rest of `Core/App`.
+- **`app_main.cpp`** — the composition root: wires concrete sensors/buses/loggers together and defines the FreeRTOS tasks (`SensorTask` per sensor, `LoggerTask`, `MavLinkTask`, `WatchdogTask`), communicating exclusively through a message queue.
 
 This dependency-inversion style (interfaces + constructor injection at every hardware boundary) is what makes the next section possible.
+
+## Reliability
+
+The device is meant to keep recording no matter what, so it's backstopped by the STM32's independent hardware watchdog (IWDG) — a countdown timer on its own internal oscillator, separate from the main system clock, that force-resets the chip if it's never refreshed in time. It's configured for a ~4 second timeout (prescaler 64, reload 1999) and starts counting from very early in `main()`, before the RTOS scheduler even starts.
+
+Rather than refreshing it blindly from a timer (which would only prove the scheduler is running, not that any actual work is happening), a dedicated `WatchdogTask` only calls `HAL_IWDG_Refresh()` once every task it supervises — both `SensorTask`s, `LoggerTask`, and `MavLinkTask` — has reported liveness within the last 4 seconds via `TaskLiveness`. If any single task hangs (a stuck I2C read, a wedged UART), that task simply stops checking in, the watchdog task withholds the refresh, and the IWDG force-resets the whole board rather than leaving it silently frozen for the rest of the flight. On the next boot, `app_main_task` checks the `RCC_FLAG_IWDGRST` reset-cause flag and logs it, so a watchdog-triggered reset during a flight is visible after the fact instead of just showing up as a gap in the log.
 
 ## Testing
 

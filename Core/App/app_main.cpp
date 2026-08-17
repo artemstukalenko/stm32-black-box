@@ -2,6 +2,7 @@
 #include "main.h"
 #include "usart.h"
 #include "cmsis_os.h"
+#include "iwdg.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -16,15 +17,22 @@
 #include "Sensor/Barometer/Barometer.h"
 #include "Sensor/GPS/Gps.h"
 #include "Service/MavLinkPacketBuilder.h"
+#include "Watchdog/TaskLiveness.h"
 
 #define MAX_LOG_MSG_LENGTH 96
 #define SENSOR_COUNT 2
+#define ALL_TASKS_STALE_THRESHOLD_MS 4000
 
 extern I2C_HandleTypeDef hi2c1;
 
 struct LogMessage {
 	char source[24];
 	char data[MAX_LOG_MSG_LENGTH];
+};
+
+struct SensorTaskContext {
+	ISensor* sensor;
+	WatchdogTaskId watchdogTaskId;
 };
 
 Stm32I2CBus i2cBus(&hi2c1);
@@ -34,7 +42,10 @@ Stm32UartBus uartBus1(&huart1);
 Stm32UartBus uartBus2(&huart2);
 Gps gps(&uartBus2);
 
-ISensor* sensors[] = {&barometer, &gps};
+SensorTaskContext sensorContexts[SENSOR_COUNT] = {
+		{ &barometer, WatchdogTaskId::Barometer },
+		{ &gps, WatchdogTaskId::Gps }
+};
 
 MavLinkPacketBuilder mavLinkPacketBuilder;
 
@@ -42,6 +53,8 @@ OverwritingFatFS fatfs;
 FatFSLogger fatFsLogger(&fatfs);
 UsbCdcLogger usbCdcLogger;
 LoggerStrategy logger(&fatFsLogger, &usbCdcLogger);
+
+TaskLiveness taskLiveness;
 
 osMessageQueueId_t logQueueHandle;
 osThreadId_t sensorTaskHandle;
@@ -65,8 +78,15 @@ const osThreadAttr_t mavLinkTask_attributes = {
 		.priority = (osPriority_t) osPriorityBelowNormal
 };
 
+const osThreadAttr_t watchdogTask_attributes = {
+		.name = "WatchdogTask",
+		.stack_size = 128 * 4,
+		.priority = (osPriority_t) osPriorityLow
+};
+
 void SensorTask(void* parameters) {
-	ISensor* sensor = static_cast<ISensor*>(parameters);
+	SensorTaskContext* taskContext = static_cast<SensorTaskContext*>(parameters);
+	ISensor* sensor = taskContext->sensor;
 	uint32_t delay = sensor->getDelay();
 
 	for(;;) {
@@ -85,6 +105,7 @@ void SensorTask(void* parameters) {
 			}
 
 			osDelay(delay);
+			taskLiveness.markAlive(taskContext->watchdogTaskId, HAL_GetTick());
 		}
 	}
 }
@@ -93,7 +114,9 @@ void LoggerTask(void *argument) {
 	LogMessage receviedMessage;
 
 	for(;;) {
-		if (osMessageQueueGet(logQueueHandle, &receviedMessage, NULL, osWaitForever) == osOK) {
+		osStatus_t status = osMessageQueueGet(logQueueHandle, &receviedMessage, NULL, 1000);
+
+		if (status == osOK) {
 			char stringBuffer[64];
  			const char* sensorLoggingTemplate = "[%s]: %s";
 			snprintf(stringBuffer, sizeof(stringBuffer), sensorLoggingTemplate, receviedMessage.source, receviedMessage.data);
@@ -104,6 +127,8 @@ void LoggerTask(void *argument) {
 				HAL_GPIO_WritePin(LED_BUILTIN_GPIO_Port, LED_BUILTIN_Pin, GPIO_PIN_RESET);
 			}
 		}
+
+		taskLiveness.markAlive(WatchdogTaskId::Logger, HAL_GetTick());
 	}
 }
 
@@ -128,6 +153,16 @@ void MavLinkTask(void *argument) {
 
 		iteration++;
 		osDelay(1000);
+		taskLiveness.markAlive(WatchdogTaskId::MavLink, HAL_GetTick());
+	}
+}
+
+void WatchdogTask(void *argument) {
+	for (;;) {
+		if (taskLiveness.allAlive(HAL_GetTick(), ALL_TASKS_STALE_THRESHOLD_MS)) {
+			HAL_IWDG_Refresh(&hiwdg);
+		}
+		osDelay(1000);
 	}
 }
 
@@ -136,16 +171,22 @@ void app_main_task(void *argument) {
 		logger.writeLog("[SYS] Logger initialized.");
 	}
 
+	if (__HAL_RCC_GET_FLAG(RCC_FLAG_IWDGRST)) {
+		logger.writeLog("[SYS] Recovered from IWDG reset.\r\n");
+	}
+
+	__HAL_RCC_CLEAR_RESET_FLAGS();
+
 	for (int i = 0; i < SENSOR_COUNT; i++) {
 		char stringBuffer[64];
 		const char* messageTemplate = "[SYS] %s %s\r\n";
-		if (sensors[i]->init()) {
+		if (sensorContexts[i].sensor->init()) {
 			snprintf(stringBuffer, sizeof(stringBuffer), messageTemplate,
-					sensors[i]->getName(), "initialized.");
+					sensorContexts[i].sensor->getName(), "initialized.");
 			logger.writeLog(stringBuffer);
 		} else {
 			snprintf(stringBuffer, sizeof(stringBuffer), messageTemplate,
-								sensors[i]->getName(), "failed initialization.");
+					sensorContexts[i].sensor->getName(), "failed initialization.");
 			logger.writeLog(stringBuffer);
 		}
 	}
@@ -157,12 +198,14 @@ void app_main_task(void *argument) {
 	logQueueHandle = osMessageQueueNew(32, sizeof(LogMessage), NULL);
 
 	for (int i = 0; i < SENSOR_COUNT; i++) {
-		osThreadNew(SensorTask, sensors[i], &sensorTask_attributes);
+		osThreadNew(SensorTask, &sensorContexts[i], &sensorTask_attributes);
 	}
 
 	loggerTaskHandle = osThreadNew(LoggerTask, NULL, &loggerTask_attributes);
 
 	osThreadNew(MavLinkTask, NULL, &mavLinkTask_attributes);
+
+	osThreadNew(WatchdogTask, NULL, &watchdogTask_attributes);
 
 	HAL_GPIO_TogglePin(LED_BUILTIN_GPIO_Port, LED_BUILTIN_Pin);
 }
