@@ -1,5 +1,8 @@
 # UAV Black Box & Telemetry System
 
+![UAV_BlackBox hardware test rig](Docs/Images/hardware.jpg)
+*Bench test rig: STM32F411 (Black Pill) + ESP32 Wi-Fi bridge, NEO-6M GPS, SD card logging, ST-Link programmer*
+
 A flight recorder and live telemetry link for small UAVs, built from scratch in C++/FreeRTOS on bare-metal STM32. It logs barometric and GPS data to an SD card for post-flight analysis, and simultaneously streams live MAVLink telemetry over a UART→Wi-Fi bridge into **QGroundControl**, using the same MAVLink dialect that drives real autopilot stacks (PX4/ArduPilot).
 
 Built as a hardware/firmware systems project: real sensors, real RTOS scheduling, real serial protocols — with an architecture disciplined enough to unit-test the entire sensor/logging/telemetry pipeline on a host machine, without any hardware attached.
@@ -41,6 +44,8 @@ Note: the ESP32 sketch also forwards `UDP → UART1 RX` for a future command upl
 - An **ESP32** (`UdpMavLinkTransmitter/esp32_mavlink_bridge`) sits on the other end of UART1 as a dumb byte-forwarder: it hosts a Wi-Fi access point and relays the MAVLink stream over **UDP port 14550** — QGroundControl's standard auto-connect port — broadcasting until a ground station is heard from, then switching to unicast. Uplink (QGC → vehicle) is forwarded back over the same UART. The STM32 never touches Wi-Fi or IP directly; it only ever speaks bytes over UART, which keeps the flight firmware free of networking complexity and lets the radio link be swapped independently.
 
 **Result:** open QGroundControl on a laptop, connect to the ESP32's AP, and see live position/altitude telemetry — while every reading is durably logged to SD in parallel, so a flight is both recoverable after the fact and observable in real time.
+![QGroundControl MAVLink Inspector showing live telemetry](Docs/Images/qgc.jpg)
+*QGroundControl's MAVLink Inspector confirming a live, sustained link: HEARTBEAT at 1 Hz with 736 messages received, component ID 1 (`MAV_COMP_ID_AUTOPILOT1`) recognized correctly, alongside GPS_RAW_INT and SCALED_PRESSURE streaming from the same session.*
 
 ## Hardware
 
