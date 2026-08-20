@@ -6,10 +6,10 @@
 class MockGPS : public ISensor {
 
 private:
-	double latitude;
-	double longitude;
-	float altitude;
-	char stringBuffer[64];
+	double latitude_;
+	double longitude_;
+	float altitude_;
+	char stringBuffer_[64];
 
 public:
 	MockGPS();

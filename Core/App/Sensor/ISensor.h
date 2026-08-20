@@ -1,7 +1,7 @@
 #ifndef ISENSOR_H
 #define ISENSOR_H
 
-#include <stdint.h>
+#include <cstdint>
 
 class ISensor {
 public:

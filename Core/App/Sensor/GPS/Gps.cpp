@@ -1,4 +1,4 @@
-#include "GPS.h"
+#include "Sensor/GPS/Gps.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

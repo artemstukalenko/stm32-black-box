@@ -60,7 +60,7 @@ private:
 	void applyRmc(const struct minmea_sentence_rmc& frame);
 
 public:
-	explicit Gps(IUartBus* uartBus_);
+	explicit Gps(IUartBus* uartBus);
 	~Gps() override = default;
 
 	bool init() override;

@@ -1,8 +1,6 @@
 #ifndef USBCDCLOGGER_H
 #define USBCDCLOGGER_H
 
-#pragma once
-
 #include "Logger/ILogger.h"
 #include <cstdint>
 

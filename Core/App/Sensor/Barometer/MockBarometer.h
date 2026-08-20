@@ -6,9 +6,9 @@
 class MockBarometer : public ISensor {
 
 private:
-	float temperature;
-	float pressure;
-	char stringBuffer[64];
+	float temperature_;
+	float pressure_;
+	char stringBuffer_[64];
 
 public:
 	MockBarometer();

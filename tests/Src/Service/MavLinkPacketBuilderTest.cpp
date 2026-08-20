@@ -3,7 +3,7 @@
 #include <cmath>
 
 #include "Service/MavLinkPacketBuilder.h"
-#include "Sensor/GPS/GPS.h"
+#include "Sensor/GPS/Gps.h"
 
 namespace {
 

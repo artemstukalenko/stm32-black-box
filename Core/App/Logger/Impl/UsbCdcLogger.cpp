@@ -1,4 +1,4 @@
-#include "UsbCdcLogger.h"
+#include "Logger/Impl/UsbCdcLogger.h"
 #include "usbd_cdc_if.h"
 #include <string.h>
 

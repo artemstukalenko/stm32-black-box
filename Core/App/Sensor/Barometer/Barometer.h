@@ -20,11 +20,11 @@ private:
 	char stringBuffer_[64];
 	bool consumed_;
 
-	uint16_t dig_T1;
-	int16_t dig_T2, dig_T3;
-	uint16_t dig_P1;
-	int16_t dig_P2, dig_P3, dig_P4, dig_P5, dig_P6, dig_P7, dig_P8, dig_P9;
-	int32_t t_fine;
+	uint16_t dig_T1_;
+	int16_t dig_T2_, dig_T3_;
+	uint16_t dig_P1_;
+	int16_t dig_P2_, dig_P3_, dig_P4_, dig_P5_, dig_P6_, dig_P7_, dig_P8_, dig_P9_;
+	int32_t t_fine_;
 
 	bool readCalibrationData();
 	bool readRawData(int32_t * rawTemp, int32_t * rawPress);

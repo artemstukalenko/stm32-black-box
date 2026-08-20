@@ -1,7 +1,7 @@
 #ifndef STM32_I2C_BUS_H
 #define STM32_I2C_BUS_H
 
-#include <HardwareInterface/I2C/II2CBus.h>
+#include "HardwareInterface/I2C/II2CBus.h"
 #include "i2c.h"
 
 class Stm32I2CBus : public II2CBus {

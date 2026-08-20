@@ -1,5 +1,5 @@
-#ifndef OVERWRITING_FATFS_H
-#define OVERWRITING_FATFS_H
+#ifndef APPENDING_FATFS_H
+#define APPENDING_FATFS_H
 
 #include "HardwareInterface/FatFS/IFatFS.h"
 #include "ff.h"

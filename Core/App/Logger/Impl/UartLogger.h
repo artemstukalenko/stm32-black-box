@@ -7,7 +7,7 @@
 class UartLogger : public ILogger {
 
 private:
-	UART_HandleTypeDef* uartHandle;
+	UART_HandleTypeDef* uartHandle_;
 
 public:
 	explicit UartLogger(UART_HandleTypeDef* huart);

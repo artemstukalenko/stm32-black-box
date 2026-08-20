@@ -1,9 +1,9 @@
-#include "MockBarometer.h"
+#include "Sensor/Barometer/MockBarometer.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-MockBarometer::MockBarometer() : temperature(25.0f), pressure(101325.0f) {
-	stringBuffer[0] = '\0';
+MockBarometer::MockBarometer() : temperature_(25.0f), pressure_(101325.0f) {
+	stringBuffer_[0] = '\0';
 }
 
 bool MockBarometer::init() {
@@ -14,17 +14,17 @@ bool MockBarometer::update() {
 	float tempDelta = ((float)(rand() % 10) - 5.0f) / 10.0f;
 	float pressDelta = (float)(rand() % 100) - 50.0f;
 
-	temperature += tempDelta;
-	pressure += pressDelta;
+	temperature_ += tempDelta;
+	pressure_ += pressDelta;
 
-	snprintf(stringBuffer, sizeof(stringBuffer), "BMP280 -> P: %d Pa, T: %d C\r\n",
-			(int) pressure, (int) temperature);
+	snprintf(stringBuffer_, sizeof(stringBuffer_), "BMP280 -> P: %d Pa, T: %d C\r\n",
+			(int) pressure_, (int) temperature_);
 
 	return true;
 }
 
 const char* MockBarometer::getDataString() {
-	return stringBuffer;
+	return stringBuffer_;
 }
 
 const char* MockBarometer::getName() {

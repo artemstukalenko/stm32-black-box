@@ -1,4 +1,4 @@
-#include "Barometer.h"
+#include "Sensor/Barometer/Barometer.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -86,18 +86,18 @@ bool Barometer::readCalibrationData() {
 		return false;
 	}
 
-	dig_T1 = (calibData[1] << 8) | calibData[0];
-	dig_T2 = (calibData[3] << 8) | calibData[2];
-	dig_T3 = (calibData[5] << 8) | calibData[4];
-	dig_P1 = (calibData[7] << 8) | calibData[6];
-	dig_P2 = (calibData[9] << 8) | calibData[8];
-	dig_P3 = (calibData[11] << 8) | calibData[10];
-	dig_P4 = (calibData[13] << 8) | calibData[12];
-	dig_P5 = (calibData[15] << 8) | calibData[14];
-	dig_P6 = (calibData[17] << 8) | calibData[16];
-	dig_P7 = (calibData[19] << 8) | calibData[18];
-	dig_P8 = (calibData[21] << 8) | calibData[20];
-	dig_P9 = (calibData[23] << 8) | calibData[22];
+	dig_T1_ = (calibData[1] << 8) | calibData[0];
+	dig_T2_ = (calibData[3] << 8) | calibData[2];
+	dig_T3_ = (calibData[5] << 8) | calibData[4];
+	dig_P1_ = (calibData[7] << 8) | calibData[6];
+	dig_P2_ = (calibData[9] << 8) | calibData[8];
+	dig_P3_ = (calibData[11] << 8) | calibData[10];
+	dig_P4_ = (calibData[13] << 8) | calibData[12];
+	dig_P5_ = (calibData[15] << 8) | calibData[14];
+	dig_P6_ = (calibData[17] << 8) | calibData[16];
+	dig_P7_ = (calibData[19] << 8) | calibData[18];
+	dig_P8_ = (calibData[21] << 8) | calibData[20];
+	dig_P9_ = (calibData[23] << 8) | calibData[22];
 
 	return true;
 }
@@ -119,21 +119,21 @@ bool Barometer::calculateCompensatedData(int32_t rawTemp, int32_t rawPress) {
 
 	//Temperature compensation
 	int32_t var1, var2;
-	var1 = ((((rawTemp >> 3) - ((int32_t)dig_T1 << 1))) * ((int32_t)dig_T2)) >> 11;
-	var2 = (((((rawTemp >> 4) - ((int32_t)dig_T1)) * ((rawTemp >> 4) - ((int32_t)dig_T1))) >> 12) * ((int32_t)dig_T3)) >> 14;
-	t_fine = var1 + var2;
+	var1 = ((((rawTemp >> 3) - ((int32_t)dig_T1_ << 1))) * ((int32_t)dig_T2_)) >> 11;
+	var2 = (((((rawTemp >> 4) - ((int32_t)dig_T1_)) * ((rawTemp >> 4) - ((int32_t)dig_T1_))) >> 12) * ((int32_t)dig_T3_)) >> 14;
+	t_fine_ = var1 + var2;
 
-	float T = (t_fine * 5 + 128) >> 8;
+	float T = (t_fine_ * 5 + 128) >> 8;
 	temperature_ = T / 100.0f; // Convert to C
 
 	//Pressure compensation
 	int64_t p_var1, p_var2, p;
-	p_var1 = ((int64_t)t_fine) - 128000;
-	p_var2 = p_var1 * p_var1 * (int64_t)dig_P6;
-	p_var2 = p_var2 + ((p_var1 * (int64_t)dig_P5) << 17);
-	p_var2 = p_var2 + (((int64_t)dig_P4) << 35);
-	p_var1 = ((p_var1 * p_var1 * (int64_t)dig_P3) >> 8) + ((p_var1 * (int64_t)dig_P2) << 12);
-	p_var1 = (((((int64_t)1) << 47) + p_var1)) * ((int64_t)dig_P1) >> 33;
+	p_var1 = ((int64_t)t_fine_) - 128000;
+	p_var2 = p_var1 * p_var1 * (int64_t)dig_P6_;
+	p_var2 = p_var2 + ((p_var1 * (int64_t)dig_P5_) << 17);
+	p_var2 = p_var2 + (((int64_t)dig_P4_) << 35);
+	p_var1 = ((p_var1 * p_var1 * (int64_t)dig_P3_) >> 8) + ((p_var1 * (int64_t)dig_P2_) << 12);
+	p_var1 = (((((int64_t)1) << 47) + p_var1)) * ((int64_t)dig_P1_) >> 33;
 
 	if (p_var1 == 0) {
 		pressure_ = 0.0f;
@@ -142,10 +142,10 @@ bool Barometer::calculateCompensatedData(int32_t rawTemp, int32_t rawPress) {
 
 	p = 1048576 - rawPress;
 	p = (((p << 31) - p_var2) * 3125) / p_var1;
-	p_var1 = (((int64_t)dig_P9) * (p >> 13) * (p >> 13)) >> 25;
-	p_var2 = (((int64_t)dig_P8) * p) >> 19;
+	p_var1 = (((int64_t)dig_P9_) * (p >> 13) * (p >> 13)) >> 25;
+	p_var2 = (((int64_t)dig_P8_) * p) >> 19;
 
-	p = ((p + p_var1 + p_var2) >> 8) + (((int64_t)dig_P7) << 4);
+	p = ((p + p_var1 + p_var2) >> 8) + (((int64_t)dig_P7_) << 4);
 
 	pressure_ = (float)p / 256.0f; //Convert to Pa
 
